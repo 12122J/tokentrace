@@ -1,0 +1,24 @@
+{
+  "name": "agent-flight-recorder",
+  "version": "0.1.0",
+  "description": "Open telemetry for coding-agent runs.",
+  "type": "module",
+  "bin": {
+    "afr": "./bin/afr.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "agents",
+    "telemetry",
+    "codex",
+    "claude",
+    "developer-tools"
+  ],
+  "license": "MIT"
+}

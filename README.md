@@ -1,200 +1,160 @@
 # Agent Flight Recorder
 
-Open telemetry for coding-agent runs.
+Know what your coding agent actually did.
 
-Agent Flight Recorder (`afr`) wraps coding agents and shell commands, then writes
-a local trace you can inspect, share, diff, or attach to an issue. It is built
-for developers who want to know what an agent did before they trust the result.
+`afr` wraps any agent run and writes a local trace — transcript, git diff, token
+usage, trust warnings — as plain files you can inspect, share, or attach to a PR.
+No hosted service. No signup. Zero runtime dependencies.
 
 ```bash
-node bin/afr.mjs run -- codex exec --json "explain this repo"
-node bin/afr.mjs summarize
-node bin/afr.mjs report .afr/runs/<run-id>
+afr run -- claude --output-format json -p "refactor this module"
+afr summarize
+# 2026-05-24T08:04Z   ok   tokens=66289   changed=4   claude ...
 ```
 
 ## Why
 
-Coding agents are becoming normal development tools, but most runs still vanish
-into terminal scrollback. Agent Flight Recorder turns a run into an auditable
-artifact:
+Agent runs disappear into terminal scrollback. You either trust the result or
+you don't, with nothing in between. `afr` gives you the evidence:
 
-- what command ran
-- what it printed
-- what changed in git
-- what token usage was reported
-- what trust warnings should be reviewed
+- what command ran and whether it succeeded
+- the full stdout/stderr transcript
+- what changed in git, as a patch
+- how many tokens were used and what it cost
+- trust warnings for runs that look incomplete
 
-The trace is local by default. No hosted service is required.
+The trace stays on your machine. You decide what to share.
 
-## Status
-
-This project is early. The current release is a working MVP with:
-
-- generic shell-command recording
-- Codex JSON token-usage parsing
-- git state and patch capture, including untracked text files
-- static Markdown and HTML reports
-- zero runtime dependencies
-
-## Install
-
-Until the package is published, run it from a checkout:
+## Getting Started
 
 ```bash
 git clone https://github.com/12122J/agent-flight-recorder.git
 cd agent-flight-recorder
 npm test
-node bin/afr.mjs --help
 ```
 
-When installed globally from npm in the future, the same commands will use
-`afr` directly:
+Run your first recorded session — here with Claude Code:
 
 ```bash
-afr run -- node -e "console.log('hello from afr')"
+node bin/afr.mjs run -- claude --output-format json -p "list the files in this repo"
 ```
 
-## Try It in 30 Seconds
-
-Clone, run one command, and see what gets recorded:
-
-```bash
-git clone https://github.com/12122J/agent-flight-recorder.git
-cd agent-flight-recorder
-node bin/afr.mjs run -- node -e "console.log('hello from afr')"
-```
-
-Terminal output:
+Output:
 
 ```
-hello from afr
-Recorded run: .afr/runs/2026-05-24T075338439Z-0a37d9
+Recorded run: .afr/runs/2026-05-24T080423817Z-479528
 ```
 
-Check the log summary:
+Check what was captured:
 
 ```bash
 node bin/afr.mjs summarize
 ```
 
 ```
-2026-05-24T075338439Z-0a37d9   ok   tokens=-   changed=0   node -e console.log('hello from afr')
+2026-05-24T080423817Z-479528   ok   tokens=66289   changed=0   claude --output-format json -p ...
 ```
 
 Open the full report:
 
 ```bash
-open .afr/runs/2026-05-24T075338439Z-0a37d9/report.html
-# or on Linux: xdg-open .afr/runs/*/report.html
+open .afr/runs/2026-05-24T080423817Z-479528/report.html
+# Linux: xdg-open .afr/runs/*/report.html
 ```
 
-The Markdown summary in `.afr/runs/<run-id>/summary.md` looks like:
+## What You Get
+
+Each run writes six files:
+
+```
+.afr/runs/<run-id>/
+  run.json        # structured metadata: command, exit code, usage, git state
+  events.jsonl    # chronological event stream
+  transcript.txt  # full stdout and stderr
+  diff.patch      # git patch captured after the run
+  summary.md      # human-readable summary
+  report.html     # standalone HTML report, openable offline
+```
+
+Example `summary.md`:
 
 ```markdown
-# Agent Flight Recorder Run
-
-**Command**: `node -e console.log('hello from afr')`
-**Duration**: 63ms
+**Command**: `claude --output-format json -p "list the files in this repo"`
+**Duration**: 13.33s
 **Exit Code**: 0
-**Total Tokens**: unknown
+**Total Tokens**: 66289
 **Files Changed**: 0
-
-## Warnings
-- No token usage captured: This agent or command did not expose structured token usage.
-
-## Artifacts
-- Events: events.jsonl
-- Transcript: transcript.txt
-- Diff: diff.patch
-- HTML Report: report.html
 ```
 
-For a real agent run with token usage, use the Codex adapter:
-
-```bash
-node bin/afr.mjs run --agent codex -- codex exec --json "summarize this repository"
-node bin/afr.mjs summarize
-# Total Tokens will now be populated from the structured JSON output
-```
-
-## Quick Start
-
-## Artifacts
-
-Each run writes:
-
-```text
-.afr/runs/<run-id>/
-  run.json        # stable metadata and aggregate observations
-  events.jsonl    # chronological event stream
-  transcript.txt  # stdout and stderr transcript
-  diff.patch      # git patch captured after the run
-  summary.md      # compact human-readable summary
-  report.html     # standalone local report
-```
-
-See [docs/RUN_FORMAT.md](docs/RUN_FORMAT.md) for schema details and
-[docs/EXAMPLES.md](docs/EXAMPLES.md) for example workflows.
-
-## Trust Warnings
-
-Reports call out conditions that deserve review:
-
-- no token usage captured
-- git metadata unavailable
-- changed files with no recorded verification command
-- non-zero command exit
-
-Warnings are intentionally conservative. They are prompts to inspect, not proof
-that a run is bad.
+See [docs/RUN_FORMAT.md](docs/RUN_FORMAT.md) for full schema details.
 
 ## Supported Adapters
 
 | Adapter | Status | Notes |
 | --- | --- | --- |
-| Shell | Working | Records any command's transcript, exit code, git state, and diff. |
+| Shell | Working | Any command — transcript, exit code, git state, diff. |
+| Claude Code | Working | Parses token usage and tool calls from `--output-format json` / `stream-json`. |
 | Codex | Working | Parses `turn.completed` usage from JSON output. |
-| Claude Code | Working | Parses `result` and `assistant` events from `--output-format json` / `stream-json`. |
 
-**Claude Code usage:**
+**Claude Code** (auto-detected when running `claude`):
 
 ```bash
-# Single-turn, flat JSON result (tokens + cost in one line)
-node bin/afr.mjs run -- claude --output-format json -p "summarize this repository"
+# Tokens + cost captured from the result event
+node bin/afr.mjs run -- claude --output-format json -p "your prompt"
 
-# Streaming JSON — also captures individual Bash and file tool calls
-node bin/afr.mjs run -- claude --output-format stream-json -p "explain this repo"
-
-# Check the recorded totals
-node bin/afr.mjs summarize
+# Also captures individual Bash and file tool calls
+node bin/afr.mjs run -- claude --output-format stream-json -p "your prompt"
 ```
 
-The adapter auto-detects `claude` as the executable — no `--agent` flag needed.
+**Codex:**
+
+```bash
+node bin/afr.mjs run -- codex exec --json "your prompt"
+```
+
+**Any shell command** (no token usage, but transcript + git diff still recorded):
+
+```bash
+node bin/afr.mjs run -- npm test
+node bin/afr.mjs run -- ./scripts/deploy.sh
+```
+
+## Trust Warnings
+
+Reports flag runs that deserve a second look:
+
+- no token usage captured
+- git metadata unavailable
+- files changed with no recorded verification command
+- non-zero exit code
+
+Warnings are conservative — they prompt inspection, not rejection.
+
+## Status
+
+Working MVP. All three adapters are tested and verified against real runs.
+The npm package is not yet published; run from a checkout for now.
+
+## Principles
+
+- **Local first** — traces stay on your machine unless you share them.
+- **Agent neutral** — the format works across tools.
+- **Portable** — plain JSON, JSONL, Markdown, HTML, and patch files.
+- **Honest** — failed runs still produce artifacts.
+- **Small core** — adapters add intelligence without coupling the recorder to any one agent.
 
 ## Development
 
 ```bash
-npm run check
+npm run check   # runs tests + npm pack --dry-run
 node bin/afr.mjs run -- node -e "console.log('sample')"
 node bin/afr.mjs summarize
 ```
 
-`npm run check` runs the test suite and `npm pack --dry-run` to verify the
-package contents.
-
-## Principles
-
-- Local first: traces stay on your machine unless you share them.
-- Agent neutral: the core format should work across tools.
-- Portable: artifacts are plain JSON, JSONL, Markdown, HTML, and patch files.
-- Honest: failed runs still produce artifacts.
-- Small core: adapters add intelligence without making the recorder agent-specific.
-
 ## Contributing
 
-Contributions are welcome once the project is public. Start with
-[CONTRIBUTING.md](CONTRIBUTING.md), and please keep new features grounded in
-portable traces rather than hosted assumptions.
+Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
+keep new features grounded in portable traces rather than hosted assumptions.
 
 ## License
 

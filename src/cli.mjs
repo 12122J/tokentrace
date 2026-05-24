@@ -89,7 +89,19 @@ async function reportCommand(args, cwd) {
 }
 
 async function summarizeCommand(args, cwd) {
-  const runsDir = args[0] ? resolve(cwd, args[0]) : join(homedir(), '.afr', 'runs');
+  let runsDir;
+  if (args[0]) {
+    runsDir = resolve(cwd, args[0]);
+  } else {
+    const localRuns = join(cwd, '.afr', 'runs');
+    const globalRuns = join(homedir(), '.afr', 'runs');
+    try {
+      await readdir(localRuns);
+      runsDir = localRuns;
+    } catch {
+      runsDir = globalRuns;
+    }
+  }
   const entries = await readRunEntries(runsDir);
   if (entries.length === 0) {
     console.log('No runs found.');

@@ -7,9 +7,13 @@ usage, trust warnings — as plain files you can inspect, share, or attach to a 
 No hosted service. No signup. Zero runtime dependencies.
 
 ```bash
-afr run -- claude --output-format json -p "refactor this module"
+# one-time setup
+afr install
+
+# now every Claude Code session is automatically recorded
+# when you close Claude Code, run:
 afr summarize
-# 2026-05-24T08:04Z   ok   tokens=66289   changed=4   claude ...
+# 2026-05-24T08:04Z   ok   tokens=10215677   changed=3   claude
 ```
 
 ## Why
@@ -31,36 +35,54 @@ The trace stays on your machine. You decide what to share.
 git clone https://github.com/12122J/agent-flight-recorder.git
 cd agent-flight-recorder
 npm test
+node bin/afr.mjs install
 ```
 
-Run your first recorded session — here with Claude Code:
+`afr install` adds a Stop hook to `~/.claude/settings.json`. From that point on, every Claude Code session is automatically recorded when you close it — no changes to how you work.
 
-```bash
-node bin/afr.mjs run -- claude --output-format json -p "list the files in this repo"
-```
-
-Output:
-
-```
-Recorded run: .afr/runs/2026-05-24T080423817Z-479528
-```
-
-Check what was captured:
+After your next Claude Code session:
 
 ```bash
 node bin/afr.mjs summarize
 ```
 
 ```
-2026-05-24T080423817Z-479528   ok   tokens=66289   changed=0   claude --output-format json -p ...
+2026-05-24T08:04Z   ok   tokens=10215677   changed=3   claude
 ```
 
 Open the full report:
 
 ```bash
-open .afr/runs/2026-05-24T080423817Z-479528/report.html
-# Linux: xdg-open .afr/runs/*/report.html
+open ~/.afr/runs/<session-id>/report.html
 ```
+
+Sessions are stored in `~/.afr/runs/` — one folder per session, named by session ID.
+
+## Automatic Recording via Hooks
+
+`afr install` registers a Stop hook with Claude Code. Every interactive session is recorded automatically when it ends — token usage, git diff, full transcript, tool calls.
+
+```bash
+node bin/afr.mjs install
+# Installed afr Stop hook → ~/.claude/settings.json
+# Every Claude Code session will now be recorded to ~/.afr/runs/
+```
+
+To see all recorded sessions:
+
+```bash
+node bin/afr.mjs summarize
+# 2026-05-24T08:22Z   ok   tokens=10215677   changed=3   claude
+# 2026-05-23T14:11Z   ok   tokens=4302819    changed=7   claude
+```
+
+To open the HTML report for a session:
+
+```bash
+open ~/.afr/runs/<session-id>/report.html
+```
+
+To uninstall, remove the afr entry from the `hooks.Stop` array in `~/.claude/settings.json`.
 
 ## What You Get
 

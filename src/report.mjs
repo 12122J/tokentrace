@@ -13,8 +13,7 @@ export function renderSummaryMarkdown(run) {
 **Agent**: ${run.agent || 'unknown'}
 **Command**: \`${run.command.join(' ')}\`
 **Working Directory**: \`${run.cwd}\`
-**Started**: ${run.started_at}
-**Completed**: ${run.completed_at || 'not completed'}
+${run.started_at ? `**Started**: ${run.started_at}\n` : ''}**Completed**: ${run.completed_at || 'not completed'}
 **Duration**: ${formatDuration(run.duration_ms)}
 **Exit Code**: ${run.exit_code ?? 'unknown'}
 **Total Tokens**: ${usage.total_tokens ?? 'unknown'}
@@ -122,9 +121,10 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
     <div class="grid">
       ${metric('Agent', run.agent || 'unknown')}
       ${metric('Exit Code', run.exit_code ?? 'unknown')}
-      ${metric('Duration', formatDuration(run.duration_ms))}
-      ${metric('Total Tokens', usage.total_tokens ?? 'unknown')}
+      ${run.duration_ms != null ? metric('Duration', formatDuration(run.duration_ms)) : ''}
+      ${metric('Total Tokens', usage.total_tokens?.toLocaleString() ?? 'unknown')}
       ${metric('Files Changed', diff.files_changed ?? 0)}
+      ${usage.cost_usd != null ? metric('Cost', `$${usage.cost_usd.toFixed(4)}`) : ''}
     </div>
 
     <h2>Warnings</h2>

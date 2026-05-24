@@ -1,10 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { buildRunWarnings } from './analysis.mjs';
 import { escapeHtml, readJson } from './util.mjs';
 
 export function renderSummaryMarkdown(run) {
   const usage = run.usage || {};
   const diff = run.diff || {};
+  const warnings = buildRunWarnings(run);
   return `# Agent Flight Recorder Run
 
 **Run ID**: ${run.id}
@@ -17,6 +19,10 @@ export function renderSummaryMarkdown(run) {
 **Exit Code**: ${run.exit_code ?? 'unknown'}
 **Total Tokens**: ${usage.total_tokens ?? 'unknown'}
 **Files Changed**: ${diff.files_changed ?? 0}
+
+## Warnings
+
+${warnings.length > 0 ? warnings.map((warning) => `- **${warning.title}**: ${warning.detail}`).join('\n') : '- None'}
 
 ## Artifacts
 
@@ -31,6 +37,7 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
   const usage = run.usage || {};
   const diff = run.diff || {};
   const eventLines = Array.isArray(events) ? events : String(events).split('\n').filter(Boolean);
+  const warnings = buildRunWarnings(run);
 
   return `<!doctype html>
 <html lang="en">
@@ -80,6 +87,21 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
       margin-top: 4px;
       font-size: 18px;
     }
+    .warnings {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 28px;
+    }
+    .warning {
+      border: 1px solid color-mix(in srgb, #f59e0b 55%, CanvasText 12%);
+      border-radius: 8px;
+      padding: 12px;
+      background: color-mix(in srgb, #f59e0b 12%, Canvas);
+    }
+    .warning strong {
+      display: block;
+      margin-bottom: 2px;
+    }
     pre {
       overflow: auto;
       padding: 16px;
@@ -103,6 +125,11 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
       ${metric('Duration', formatDuration(run.duration_ms))}
       ${metric('Total Tokens', usage.total_tokens ?? 'unknown')}
       ${metric('Files Changed', diff.files_changed ?? 0)}
+    </div>
+
+    <h2>Warnings</h2>
+    <div class="warnings">
+      ${warnings.length > 0 ? warnings.map(renderWarning).join('\n') : '<p>No warnings.</p>'}
     </div>
 
     <h2>Command</h2>
@@ -141,6 +168,10 @@ export async function regenerateReport(runDir) {
 
 function metric(label, value) {
   return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function renderWarning(warning) {
+  return `<div class="warning"><strong>${escapeHtml(warning.title)}</strong><span>${escapeHtml(warning.detail)}</span></div>`;
 }
 
 function formatDuration(durationMs) {

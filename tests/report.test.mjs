@@ -38,6 +38,7 @@ test('renderSummaryMarkdown includes command, exit code, usage, and diff summary
   assert.match(markdown, /Exit Code\*\*: 0/);
   assert.match(markdown, /Total Tokens\*\*: 13/);
   assert.match(markdown, /Files Changed\*\*: 2/);
+  assert.match(markdown, /Changes recorded without verification command/);
 });
 
 test('renderHtmlReport escapes command, transcript, patch, and event content', () => {
@@ -51,6 +52,7 @@ test('renderHtmlReport escapes command, transcript, patch, and event content', (
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(html, /&lt;script&gt;alert\(&quot;transcript&quot;\)&lt;\/script&gt;/);
   assert.match(html, /&lt;script&gt;alert\(&quot;patch&quot;\)&lt;\/script&gt;/);
+  assert.match(html, /Warnings/);
   assert.doesNotMatch(html, /<script>alert/);
 });
 

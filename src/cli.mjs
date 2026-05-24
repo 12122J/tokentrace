@@ -1,5 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import packageJson from '../package.json' with { type: 'json' };
 import { recordRun } from './run-recorder.mjs';
 import { regenerateReport } from './report.mjs';
 import { readJson } from './util.mjs';
@@ -10,6 +11,7 @@ Usage:
   afr run [--agent <name>] [--label <label>] -- <command...>
   afr report <run-dir>
   afr summarize [runs-dir]
+  afr --version
   afr --help
 
 Examples:
@@ -24,6 +26,11 @@ export async function main(argv, options = {}) {
 
   if (!command || command === '--help' || command === '-h' || command === 'help') {
     console.log(USAGE.trimEnd());
+    return 0;
+  }
+
+  if (command === '--version' || command === '-v' || command === 'version') {
+    console.log(packageJson.version);
     return 0;
   }
 

@@ -6,9 +6,19 @@
   "bin": {
     "afr": "./bin/afr.mjs"
   },
+  "files": [
+    "bin",
+    "docs/EXAMPLES.md",
+    "docs/PUBLIC_RELEASE_CHECKLIST.md",
+    "docs/ROADMAP.md",
+    "docs/RUN_FORMAT.md",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node --test",
-    "check": "npm test"
+    "check": "npm test && npm pack --dry-run --cache .npm-cache"
   },
   "engines": {
     "node": ">=20"
@@ -20,5 +30,13 @@
     "claude",
     "developer-tools"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/12122J/agent-flight-recorder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/12122J/agent-flight-recorder/issues"
+  },
+  "homepage": "https://github.com/12122J/agent-flight-recorder#readme",
   "license": "MIT"
 }

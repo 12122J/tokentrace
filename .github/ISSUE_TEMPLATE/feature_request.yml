@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a capability or adapter.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What agent-run traceability problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should Agent Flight Recorder record, render, or export?
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Example artifacts
+      description: Include sample JSON lines, transcripts, or report ideas when useful.
+    validations:
+      required: false

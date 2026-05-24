@@ -1,0 +1,26 @@
+name: Bug report
+description: Report something that is broken or misleading.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Include the `afr` command, agent command, and relevant artifact snippets.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, OS, agent CLI/version, and git context.
+    validations:
+      required: true

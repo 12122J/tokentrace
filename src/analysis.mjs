@@ -9,7 +9,10 @@ export function buildRunWarnings(run) {
     });
   }
 
-  if (!run.git?.before?.available || !run.git?.after?.available) {
+  const gitAvailable = run.source === 'hook'
+    ? run.git?.after?.available
+    : (run.git?.before?.available && run.git?.after?.available);
+  if (!gitAvailable) {
     warnings.push({
       code: 'git-unavailable',
       title: 'Git metadata incomplete',

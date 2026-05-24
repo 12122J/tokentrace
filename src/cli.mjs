@@ -1,6 +1,8 @@
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import packageJson from '../package.json' with { type: 'json' };
+import { recordFromHook } from './hook-recorder.mjs';
 import { recordRun } from './run-recorder.mjs';
 import { regenerateReport } from './report.mjs';
 import { readJson } from './util.mjs';
@@ -11,12 +13,15 @@ Usage:
   afr run [--agent <name>] [--label <label>] -- <command...>
   afr report <run-dir>
   afr summarize [runs-dir]
+  afr hook stop
+  afr install
   afr --version
   afr --help
 
 Examples:
   afr run -- node -e "console.log('hello')"
-  afr run --agent codex -- codex exec --json "explain this repo"
+  afr run -- claude --output-format json -p "explain this repo"
+  afr install                                  # records every Claude Code session automatically
   afr summarize
 `;
 
@@ -44,6 +49,14 @@ export async function main(argv, options = {}) {
 
   if (command === 'summarize') {
     return summarizeCommand(rest, cwd);
+  }
+
+  if (command === 'hook') {
+    return hookCommand(rest, cwd);
+  }
+
+  if (command === 'install') {
+    return installCommand(cwd);
   }
 
   throw new Error(`Unknown command: ${command}\n\n${USAGE}`);
@@ -89,6 +102,69 @@ async function summarizeCommand(args, cwd) {
     console.log(`${run.id}\t${status}\ttokens=${tokens}\tchanged=${changed}\t${run.command.join(' ')}`);
   }
 
+  return 0;
+}
+
+async function hookCommand(args, cwd) {
+  const subcommand = args[0];
+  if (subcommand !== 'stop') {
+    throw new Error(`Unknown hook subcommand: ${subcommand}. Available: stop`);
+  }
+
+  let input;
+  try {
+    const chunks = [];
+    for await (const chunk of process.stdin) chunks.push(chunk);
+    input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch {
+    // Claude Code didn't send valid JSON — nothing to record
+    return 0;
+  }
+
+  const { session_id: sessionId, transcript_path: transcriptPath } = input;
+  if (!sessionId || !transcriptPath) return 0;
+
+  try {
+    const result = await recordFromHook({ sessionId, transcriptPath, fallbackCwd: cwd });
+    process.stderr.write(`[afr] Recorded session: ${result.runDir}\n`);
+  } catch (error) {
+    process.stderr.write(`[afr] Hook error: ${error.message}\n`);
+  }
+
+  return 0;
+}
+
+async function installCommand(cwd) {
+  const afrPath = fileURLToPath(new URL('../bin/afr.mjs', import.meta.url));
+  const hookCommand = `node ${afrPath} hook stop`;
+  const settingsPath = join(process.env.HOME || '~', '.claude', 'settings.json');
+
+  let settings = {};
+  try {
+    settings = JSON.parse(await readFile(settingsPath, 'utf8'));
+  } catch {
+    // File doesn't exist or is invalid — start fresh
+  }
+
+  const stopHooks = settings.hooks?.Stop ?? [];
+  const alreadyInstalled = stopHooks.some(
+    matcher => matcher.hooks?.some(h => h.command?.includes('afr'))
+  );
+
+  if (alreadyInstalled) {
+    console.log('afr Stop hook is already installed in ~/.claude/settings.json');
+    return 0;
+  }
+
+  settings.hooks = settings.hooks ?? {};
+  settings.hooks.Stop = [
+    ...stopHooks,
+    { hooks: [{ type: 'command', command: hookCommand }] }
+  ];
+
+  await writeFile(settingsPath, JSON.stringify(settings, null, 4) + '\n');
+  console.log(`Installed afr Stop hook → ${settingsPath}`);
+  console.log('Every Claude Code session in any directory will now be recorded to .afr/runs/');
   return 0;
 }
 

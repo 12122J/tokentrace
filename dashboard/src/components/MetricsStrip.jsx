@@ -48,9 +48,10 @@ function effectiveTokens(usage) {
   return (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
 }
 
-export default function MetricsStrip({ sessions }) {
+export default function MetricsStrip({ sessions, vatRate = 0 }) {
   const costs = sessions.map(s => sessionCost(s)).filter(c => c != null);
-  const totalCost = costs.reduce((sum, c) => sum + c, 0);
+  const subtotal = costs.reduce((sum, c) => sum + c, 0);
+  const totalCost = subtotal * (1 + vatRate / 100);
   const totalTokens = sessions.reduce((sum, s) => sum + effectiveTokens(s.usage), 0);
   const sessionCount = sessions.length;
   const avgCost = costs.length > 0 ? totalCost / costs.length : null;

@@ -3,6 +3,7 @@ import MetricsStrip from './components/MetricsStrip.jsx';
 import CostChart from './components/CostChart.jsx';
 import SessionsTable from './components/SessionsTable.jsx';
 import SessionDetail from './components/SessionDetail.jsx';
+import SettingsPanel from './components/SettingsPanel.jsx';
 
 const FILTER_OPTIONS = [
   { label: '7d', days: 7 },
@@ -22,6 +23,15 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [filterDays, setFilterDays] = useState(30);
+  const [vatRate, setVatRate] = useState(() => {
+    const stored = localStorage.getItem('tt_vat_rate');
+    return stored != null ? Number(stored) : 0;
+  });
+
+  function handleVatChange(rate) {
+    setVatRate(rate);
+    localStorage.setItem('tt_vat_rate', String(rate));
+  }
 
   useEffect(() => {
     fetch('/api/sessions')
@@ -56,6 +66,7 @@ export default function App() {
               </button>
             ))}
           </div>
+          <SettingsPanel vatRate={vatRate} onVatChange={handleVatChange} />
         </div>
       </header>
 
@@ -64,19 +75,20 @@ export default function App() {
           <div className="loading">Loading...</div>
         ) : (
           <>
-            <MetricsStrip sessions={sessions} />
+            <MetricsStrip sessions={sessions} vatRate={vatRate} />
             <div className="body-columns">
               <div className="col-left">
-                <CostChart sessions={sessions} />
+                <CostChart sessions={sessions} vatRate={vatRate} />
                 <div className="section-header">Sessions</div>
                 <SessionsTable
                   sessions={sessions}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
+                  vatRate={vatRate}
                 />
               </div>
               <div className="col-right">
-                <SessionDetail session={selectedSession} />
+                <SessionDetail session={selectedSession} vatRate={vatRate} />
               </div>
             </div>
           </>

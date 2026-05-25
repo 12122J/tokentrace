@@ -9,13 +9,38 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-function aggregateByDay(sessions) {
+const CHART_PRICING = [
+  { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+  { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
+];
+
+function sessionCostValue(session) {
+  if (session.usage?.cost_usd != null) return session.usage.cost_usd;
+  if (!session.model || !session.usage) return 0;
+  const p = CHART_PRICING.find(t => session.model.startsWith(t.prefix));
+  if (!p) return 0;
+  const M = 1_000_000;
+  const u = session.usage;
+  return (
+    (u.input_tokens ?? 0) / M * p.input +
+    (u.cache_creation_tokens ?? 0) / M * p.cacheWrite +
+    (u.cache_read_tokens ?? u.cached_input_tokens ?? 0) / M * p.cacheRead +
+    (u.output_tokens ?? 0) / M * p.output
+  );
+}
+
+function aggregateByDay(sessions, vatRate) {
   const map = new Map();
+  const mult = 1 + vatRate / 100;
 
   for (const session of sessions) {
-    const date = session.started_at ? session.started_at.slice(0, 10) : null;
+    const date = (session.started_at || session.completed_at || '').slice(0, 10);
     if (!date) continue;
-    const cost = session.usage?.cost_usd ?? 0;
+    const cost = sessionCostValue(session) * mult;
     map.set(date, (map.get(date) ?? 0) + cost);
   }
 
@@ -46,10 +71,10 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export default function CostChart({ sessions }) {
-  const data = useMemo(() => aggregateByDay(sessions), [sessions]);
+export default function CostChart({ sessions, vatRate = 0 }) {
+  const data = useMemo(() => aggregateByDay(sessions, vatRate), [sessions, vatRate]);
 
-  const hasCost = sessions.some(s => s.usage?.cost_usd != null && s.usage.cost_usd > 0);
+  const hasCost = sessions.some(s => sessionCostValue(s) > 0);
 
   if (!hasCost || data.length === 0) {
     return (

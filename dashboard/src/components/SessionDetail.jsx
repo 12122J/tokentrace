@@ -114,7 +114,90 @@ function TranscriptView({ content }) {
   );
 }
 
-export default function SessionDetail({ session }) {
+function CostBreakdown({ model, usage, vatRate }) {
+  if (!usage || !model) return null;
+  const PRICING = [
+    { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+    { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+    { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+    { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+    { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+    { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
+  ];
+  const p = PRICING.find(t => model.startsWith(t.prefix));
+  if (!p) return null;
+
+  const M = 1_000_000;
+  const rows = [
+    { label: 'Input',       tokens: usage.input_tokens  ?? 0, rate: p.input      },
+    { label: 'Cache write', tokens: usage.cache_creation_tokens ?? 0, rate: p.cacheWrite },
+    { label: 'Cache reads', tokens: usage.cache_read_tokens ?? usage.cached_input_tokens ?? 0, rate: p.cacheRead },
+    { label: 'Output',      tokens: usage.output_tokens ?? 0, rate: p.output     },
+  ].filter(r => r.tokens > 0);
+
+  const subtotal = rows.reduce((s, r) => s + r.tokens / M * r.rate, 0);
+  const vat = subtotal * (vatRate / 100);
+  const total = subtotal + vat;
+
+  function fmt(n) {
+    if (n < 0.001) return '<$0.001';
+    if (n >= 1) return `$${n.toFixed(2)}`;
+    return `$${n.toFixed(4)}`;
+  }
+  function fmtTokens(n) {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return String(n);
+  }
+
+  return (
+    <div className="cost-breakdown">
+      <div className="cost-breakdown__title">Cost Breakdown</div>
+      <table className="cost-breakdown__table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th className="right">Tokens</th>
+            <th className="right">Rate /M</th>
+            <th className="right">Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.label}>
+              <td>{r.label}</td>
+              <td className="right mono">{fmtTokens(r.tokens)}</td>
+              <td className="right mono">${r.rate.toFixed(2)}</td>
+              <td className="right mono">{fmt(r.tokens / M * r.rate)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="subtotal">
+            <td colSpan={3}>Subtotal</td>
+            <td className="right mono">{fmt(subtotal)}</td>
+          </tr>
+          {vatRate > 0 && (
+            <tr className="vat-row">
+              <td colSpan={3}>VAT ({vatRate}%)</td>
+              <td className="right mono">{fmt(vat)}</td>
+            </tr>
+          )}
+          <tr className="total-row">
+            <td colSpan={3}><strong>Total{vatRate > 0 ? ' (incl. VAT)' : ''}</strong></td>
+            <td className="right mono"><strong>{fmt(total)}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div className="cost-breakdown__note">
+        Estimated from published Anthropic pricing. Actual billed amount may vary.
+        {vatRate === 0 && ' EU customers: set your VAT rate in Settings.'}
+      </div>
+    </div>
+  );
+}
+
+export default function SessionDetail({ session, vatRate = 0 }) {
   const [activeTab, setActiveTab] = useState('transcript');
   const [transcript, setTranscript] = useState(null);
   const [diff, setDiff] = useState(null);
@@ -166,7 +249,9 @@ export default function SessionDetail({ session }) {
   const gitAvailable = git?.available !== false;
   const { total: displayTotal, cacheCreation, cacheReads } = resolveUsageTokens(usage);
   const costUsd = usage?.cost_usd;
-  const estimatedCost = costUsd == null ? estimateCost(session.model, usage) : null;
+  const baseCost = costUsd ?? estimateCost(session.model, usage);
+  const displayCost = baseCost != null ? baseCost * (1 + vatRate / 100) : null;
+  const isEstimated = costUsd == null;
 
   return (
     <div className="detail-panel">
@@ -214,9 +299,9 @@ export default function SessionDetail({ session }) {
           </div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">{estimatedCost != null ? 'Est. Cost' : 'Cost'}</div>
-          <div className="detail-meta-item__value" title={estimatedCost != null ? 'Estimated from token counts and model pricing' : undefined}>
-            {costUsd != null ? formatCost(costUsd) : formatCost(estimatedCost, true)}
+          <div className="detail-meta-item__label">{isEstimated ? 'Est. Cost' : 'Cost'}{vatRate > 0 ? ` +${vatRate}%` : ''}</div>
+          <div className="detail-meta-item__value" title={isEstimated ? 'Estimated from token counts and model pricing' : undefined}>
+            {formatCost(displayCost, isEstimated)}
           </div>
         </div>
         <div className="detail-meta-item">
@@ -285,6 +370,8 @@ export default function SessionDetail({ session }) {
           ))}
         </div>
       )}
+
+      <CostBreakdown model={session.model} usage={usage} vatRate={vatRate} />
 
       <div className="detail-tabs">
         <button

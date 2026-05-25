@@ -71,7 +71,7 @@ const COLUMNS = [
   { key: 'success', label: 'Status', sortFn: (a, b) => Number(b.success) - Number(a.success) },
 ];
 
-export default function SessionsTable({ sessions, selectedId, onSelect }) {
+export default function SessionsTable({ sessions, selectedId, onSelect, vatRate = 0 }) {
   const [sortKey, setSortKey] = useState('started_at');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -132,7 +132,7 @@ export default function SessionsTable({ sessions, selectedId, onSelect }) {
               <td>{formatDate(session.started_at || session.completed_at)}</td>
               <td className="muted" style={{ fontFamily: 'Menlo, monospace', fontSize: 11 }}>{session.model ? session.model.replace('claude-', '') : '—'}</td>
               <td className="muted">{formatTokens(effectiveTokens(session.usage))}</td>
-              <td className="muted">{(() => { const { value, estimated } = sessionCost(session); return formatCost(value, estimated); })()}</td>
+              <td className="muted">{(() => { const { value, estimated } = sessionCost(session); const v = value != null ? value * (1 + vatRate / 100) : null; return formatCost(v, estimated); })()}</td>
               <td className="muted">{session.diff?.files_changed ?? '—'}</td>
               <td className="muted">{formatDuration(session.duration_ms)}</td>
               <td>

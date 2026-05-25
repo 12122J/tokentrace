@@ -6,11 +6,37 @@ function formatDate(isoString) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function formatCost(value) {
+const PRICING = [
+  { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+  { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
+];
+
+function sessionCost(session) {
+  if (session.usage?.cost_usd != null) return { value: session.usage.cost_usd, estimated: false };
+  if (!session.model || !session.usage) return { value: null, estimated: false };
+  const p = PRICING.find(t => session.model.startsWith(t.prefix));
+  if (!p) return { value: null, estimated: false };
+  const M = 1_000_000;
+  const u = session.usage;
+  const value = (
+    (u.input_tokens  ?? 0) / M * p.input      +
+    (u.cache_creation_tokens ?? 0) / M * p.cacheWrite +
+    (u.cache_read_tokens ?? u.cached_input_tokens ?? 0) / M * p.cacheRead +
+    (u.output_tokens ?? 0) / M * p.output
+  );
+  return { value, estimated: true };
+}
+
+function formatCost(value, estimated = false) {
   if (value == null || isNaN(value)) return '—';
   if (value === 0) return '—';
-  if (value >= 1) return `$${value.toFixed(2)}`;
-  return `$${value.toFixed(4)}`;
+  const p = estimated ? '~' : '';
+  if (value >= 1) return `${p}$${value.toFixed(2)}`;
+  return `${p}$${value.toFixed(4)}`;
 }
 
 function formatTokens(value) {
@@ -39,7 +65,7 @@ const COLUMNS = [
   { key: 'started_at', label: 'Date', sortFn: (a, b) => (a.started_at || a.completed_at || '').localeCompare(b.started_at || b.completed_at || '') },
   { key: 'model', label: 'Model', sortFn: (a, b) => (a.model || '').localeCompare(b.model || '') },
   { key: 'total_tokens', label: 'Tokens', sortFn: (a, b) => (effectiveTokens(a.usage) ?? -1) - (effectiveTokens(b.usage) ?? -1) },
-  { key: 'cost_usd', label: 'Cost', sortFn: (a, b) => (a.usage?.cost_usd ?? -1) - (b.usage?.cost_usd ?? -1) },
+  { key: 'cost_usd', label: 'Cost', sortFn: (a, b) => (sessionCost(a).value ?? -1) - (sessionCost(b).value ?? -1) },
   { key: 'files_changed', label: 'Files', sortFn: (a, b) => (a.diff?.files_changed ?? -1) - (b.diff?.files_changed ?? -1) },
   { key: 'duration_ms', label: 'Duration', sortFn: (a, b) => (a.duration_ms ?? -1) - (b.duration_ms ?? -1) },
   { key: 'success', label: 'Status', sortFn: (a, b) => Number(b.success) - Number(a.success) },
@@ -106,7 +132,7 @@ export default function SessionsTable({ sessions, selectedId, onSelect }) {
               <td>{formatDate(session.started_at || session.completed_at)}</td>
               <td className="muted" style={{ fontFamily: 'Menlo, monospace', fontSize: 11 }}>{session.model ? session.model.replace('claude-', '') : '—'}</td>
               <td className="muted">{formatTokens(effectiveTokens(session.usage))}</td>
-              <td className="muted">{formatCost(session.usage?.cost_usd)}</td>
+              <td className="muted">{(() => { const { value, estimated } = sessionCost(session); return formatCost(value, estimated); })()}</td>
               <td className="muted">{session.diff?.files_changed ?? '—'}</td>
               <td className="muted">{formatDuration(session.duration_ms)}</td>
               <td>

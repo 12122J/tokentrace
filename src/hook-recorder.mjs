@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { extractFromTranscript } from './adapters/transcript.mjs';
 import { EventWriter } from './event-writer.mjs';
 import { countPatchFiles, getGitDiff, getGitSnapshot } from './git.mjs';
+import { estimateCostUsd } from './pricing.mjs';
 import { regenerateReport } from './report.mjs';
 import { ensureDir, nowIso, writeJson } from './util.mjs';
 
@@ -50,7 +51,10 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
       branch: extracted.gitBranch,
       after: gitAfter,
     },
-    usage: extracted.usage,
+    usage: extracted.usage ? {
+      ...extracted.usage,
+      cost_usd: estimateCostUsd(extracted.model, extracted.usage),
+    } : null,
     session: null,
     tools: extracted.tools,
     files: extracted.files,

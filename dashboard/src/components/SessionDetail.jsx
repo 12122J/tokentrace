@@ -19,11 +19,36 @@ function formatDuration(ms) {
   return `${m}m ${s}s`;
 }
 
-function formatCost(value) {
+function formatCost(value, estimated = false) {
   if (value == null || isNaN(value)) return '—';
   if (value === 0) return '—';
-  if (value >= 1) return `$${value.toFixed(2)}`;
-  return `$${value.toFixed(4)}`;
+  const prefix = estimated ? '~' : '';
+  if (value >= 1) return `${prefix}$${value.toFixed(2)}`;
+  return `${prefix}$${value.toFixed(4)}`;
+}
+
+const PRICING = [
+  { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+  { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
+  { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
+];
+
+function estimateCost(model, usage) {
+  if (!model || !usage) return null;
+  const p = PRICING.find(t => model.startsWith(t.prefix));
+  if (!p) return null;
+  const M = 1_000_000;
+  const cacheWrite = usage.cache_creation_tokens ?? 0;
+  const cacheRead  = usage.cache_read_tokens ?? usage.cached_input_tokens ?? 0;
+  return (
+    (usage.input_tokens  ?? 0) / M * p.input      +
+    cacheWrite           / M * p.cacheWrite         +
+    cacheRead            / M * p.cacheRead          +
+    (usage.output_tokens ?? 0) / M * p.output
+  );
 }
 
 function formatTokens(value) {
@@ -138,7 +163,10 @@ export default function SessionDetail({ session }) {
   const usage = session.usage;
   const git = session.git?.after;
   const gitBranch = session.git?.branch || git?.branch;
+  const gitAvailable = git?.available !== false;
   const { total: displayTotal, cacheCreation, cacheReads } = resolveUsageTokens(usage);
+  const costUsd = usage?.cost_usd;
+  const estimatedCost = costUsd == null ? estimateCost(session.model, usage) : null;
 
   return (
     <div className="detail-panel">
@@ -186,8 +214,10 @@ export default function SessionDetail({ session }) {
           </div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Cost</div>
-          <div className="detail-meta-item__value">{formatCost(usage?.cost_usd)}</div>
+          <div className="detail-meta-item__label">{estimatedCost != null ? 'Est. Cost' : 'Cost'}</div>
+          <div className="detail-meta-item__value" title={estimatedCost != null ? 'Estimated from token counts and model pricing' : undefined}>
+            {costUsd != null ? formatCost(costUsd) : formatCost(estimatedCost, true)}
+          </div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Total Tokens</div>
@@ -217,16 +247,29 @@ export default function SessionDetail({ session }) {
         )}
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Files Changed</div>
-          <div className="detail-meta-item__value">{session.diff?.files_changed ?? '—'}</div>
+          <div className="detail-meta-item__value">
+            {!gitAvailable
+              ? <span style={{ color: '#9ca3af', fontSize: 11 }}>no git</span>
+              : (session.diff?.files_changed ?? '—')
+            }
+          </div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Branch</div>
-          <div className="detail-meta-item__value">{gitBranch || '—'}</div>
+          <div className="detail-meta-item__value">
+            {!gitAvailable
+              ? <span style={{ color: '#9ca3af', fontSize: 11 }}>no git</span>
+              : (gitBranch || '—')
+            }
+          </div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Commit</div>
           <div className="detail-meta-item__value" style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>
-            {git?.commit ? git.commit.slice(0, 8) : '—'}
+            {!gitAvailable
+              ? <span style={{ color: '#9ca3af', fontSize: 11, fontFamily: 'inherit' }}>no git</span>
+              : (git?.commit ? git.commit.slice(0, 8) : '—')
+            }
           </div>
         </div>
         <div className="detail-meta-item">

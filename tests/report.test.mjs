@@ -33,7 +33,7 @@ const SAMPLE_RUN = {
 
 test('renderSummaryMarkdown includes command, exit code, usage, and diff summary', () => {
   const markdown = renderSummaryMarkdown(SAMPLE_RUN);
-  assert.match(markdown, /# Agent Flight Recorder Run/);
+  assert.match(markdown, /# TokenTrace Run/);
   assert.match(markdown, /node -e/);
   assert.match(markdown, /Exit Code\*\*: 0/);
   assert.match(markdown, /Total Tokens\*\*: 13/);
@@ -67,7 +67,7 @@ test('regenerateReport writes summary and html files', async () => {
     const result = await regenerateReport(dir);
     assert.equal(result.reportPath, join(dir, 'report.html'));
     assert.match(await readFile(join(dir, 'summary.md'), 'utf8'), /run-123/);
-    assert.match(await readFile(join(dir, 'report.html'), 'utf8'), /Agent Flight Recorder/);
+    assert.match(await readFile(join(dir, 'report.html'), 'utf8'), /TokenTrace/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

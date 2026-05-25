@@ -1,6 +1,6 @@
 {
   "name": "agent-flight-recorder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Open telemetry for coding-agent runs.",
   "type": "module",
   "bin": {

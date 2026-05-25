@@ -109,10 +109,11 @@ async function summarizeCommand(args, cwd) {
   }
 
   for (const run of entries) {
-    const tokens = run.usage?.total_tokens ?? '-';
+    const tokens = run.usage?.total_tokens != null ? run.usage.total_tokens.toLocaleString() : '-';
+    const cost = run.usage?.cost_usd != null ? `$${run.usage.cost_usd.toFixed(4)}` : '-';
     const changed = run.diff?.files_changed ?? '-';
     const status = run.exit_code === 0 ? 'ok' : `exit ${run.exit_code}`;
-    console.log(`${run.id}\t${status}\ttokens=${tokens}\tchanged=${changed}\t${run.command.join(' ')}`);
+    console.log(`${run.id}\t${status}\ttokens=${tokens}\tcost=${cost}\tchanged=${changed}\t${run.command.join(' ')}`);
   }
 
   return 0;

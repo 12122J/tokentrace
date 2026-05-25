@@ -12,7 +12,7 @@ afr install
 # every Claude Code session is now automatically recorded
 
 afr summarize
-# 2026-05-24T08:04Z   ok   tokens=10,215,677   changed=3   claude
+# 2026-05-24   ok   tokens=10,215,677   cost=$4.1020   changed=3   claude
 ```
 
 ## Why
@@ -33,8 +33,8 @@ The trace stays on your machine. You decide what to share.
 **Track what you're actually spending.** Claude Code sessions can quietly run up large token counts. `afr summarize` gives you a line per session — tokens, files changed, date — so you can see where your usage goes.
 
 ```
-2026-05-24   ok   tokens=10,215,677   changed=3   claude
-2026-05-23   ok   tokens=4,302,819    changed=7   claude
+2026-05-24   ok   tokens=10,215,677   cost=$4.1020   changed=3   claude
+2026-05-23   ok   tokens=4,302,819    cost=$1.7231   changed=7   claude
 2026-05-22   ok   tokens=892,041      changed=0   claude
 ```
 

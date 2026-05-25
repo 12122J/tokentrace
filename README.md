@@ -11,7 +11,10 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@j___avi/tokentrace"><img src="https://img.shields.io/npm/v/@j___avi/tokentrace?color=000&labelColor=000&style=flat-square" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@j___avi/tokentrace"><img src="https://img.shields.io/npm/v/@j___avi/tokentrace?color=000&labelColor=000&style=flat-square" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@j___avi/tokentrace"><img src="https://img.shields.io/npm/dw/@j___avi/tokentrace?color=000&labelColor=000&style=flat-square" alt="npm downloads"></a>
+  <a href="https://github.com/12122J/tokentrace/stargazers"><img src="https://img.shields.io/github/stars/12122J/tokentrace?color=000&labelColor=000&style=flat-square" alt="stars"></a>
+  <a href="https://github.com/12122J/tokentrace/blob/main/package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-000?labelColor=000&style=flat-square" alt="node"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-000?labelColor=000&style=flat-square" alt="MIT"></a>
   <a href="https://github.com/12122J/tokentrace"><img src="https://img.shields.io/badge/by-12122J-000?labelColor=000&style=flat-square" alt="author"></a>
 </p>

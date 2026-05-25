@@ -10,6 +10,7 @@ export function extractFromTranscript(lines) {
   let ccVersion = null;
   let gitBranch = null;
   let entrypoint = null;
+  let description = null;
   const rawUsage = { input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 0 };
   let hasUsage = false;
   const tools = { command_count: 0, commands: [] };
@@ -29,7 +30,14 @@ export function extractFromTranscript(lines) {
       const content = entry.message?.content;
       const text = typeof content === 'string' ? content
         : Array.isArray(content) ? content.filter(b => b?.type === 'text').map(b => b.text).join('\n') : '';
-      if (text.trim()) humanParts.push(`[user]\n${text.trim()}`);
+      const trimmed = text.trim();
+      if (trimmed) {
+        humanParts.push(`[user]\n${trimmed}`);
+        // First substantive user message becomes the session description
+        if (!description && trimmed.length > 3) {
+          description = trimmed.slice(0, 160).replace(/\s+/g, ' ');
+        }
+      }
     }
 
     if (entry.type === 'assistant') {
@@ -81,6 +89,7 @@ export function extractFromTranscript(lines) {
     ccVersion,
     gitBranch,
     entrypoint,
+    description,
     usage: hasUsage ? {
       input_tokens: rawUsage.input_tokens,
       cache_creation_tokens: rawUsage.cache_creation_input_tokens,

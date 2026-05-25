@@ -38,6 +38,7 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
     label: null,
     profile: process.env.TOKENTRACE_PROFILE ?? null,
     account_key_prefix: accountFingerprint(),
+    description: extracted.description,
     model: extracted.model,
     cc_version: extracted.ccVersion,
     entrypoint: extracted.entrypoint,

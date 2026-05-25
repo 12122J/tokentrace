@@ -88,7 +88,13 @@ export default function App() {
                 />
               </div>
               <div className="col-right">
-                <SessionDetail session={selectedSession} vatRate={vatRate} />
+                <SessionDetail
+                  session={selectedSession}
+                  vatRate={vatRate}
+                  onLabelChange={(id, newLabel) => {
+                    setAllSessions(prev => prev.map(s => s.id === id ? { ...s, label: newLabel } : s));
+                  }}
+                />
               </div>
             </div>
           </>

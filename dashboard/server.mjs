@@ -1,5 +1,5 @@
 import express from 'express';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { existsSync } from 'node:fs';
@@ -35,6 +35,18 @@ app.get('/api/sessions', async (req, res) => {
   }
 
   res.json(sessions);
+});
+
+app.put('/api/sessions/:id/label', express.json(), async (req, res) => {
+  const runPath = join(RUNS_DIR, req.params.id, 'run.json');
+  try {
+    const run = JSON.parse(await readFile(runPath, 'utf8'));
+    run.label = typeof req.body.label === 'string' ? req.body.label.trim() || null : null;
+    await writeFile(runPath, JSON.stringify(run, null, 2) + '\n');
+    res.json({ ok: true, label: run.label });
+  } catch {
+    res.status(404).json({ error: 'Session not found' });
+  }
 });
 
 app.get('/api/sessions/:id/transcript', async (req, res) => {

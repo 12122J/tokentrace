@@ -153,56 +153,91 @@ function CostBreakdown({ model, usage, vatRate }) {
   return (
     <div className="cost-breakdown">
       <div className="cost-breakdown__title">Cost Breakdown</div>
-      <table className="cost-breakdown__table">
-        <thead>
-          <tr>
-            <th>Component</th>
-            <th className="right">Tokens</th>
-            <th className="right">Rate /M</th>
-            <th className="right">Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.label}>
-              <td>{r.label}</td>
-              <td className="right mono">{fmtTokens(r.tokens)}</td>
-              <td className="right mono">${r.rate.toFixed(2)}</td>
-              <td className="right mono">{fmt(r.tokens / M * r.rate)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="subtotal">
-            <td colSpan={3}>Subtotal</td>
-            <td className="right mono">{fmt(subtotal)}</td>
-          </tr>
-          {vatRate > 0 && (
-            <tr className="vat-row">
-              <td colSpan={3}>VAT ({vatRate}%)</td>
-              <td className="right mono">{fmt(vat)}</td>
-            </tr>
-          )}
-          <tr className="total-row">
-            <td colSpan={3}><strong>Total{vatRate > 0 ? ' (incl. VAT)' : ''}</strong></td>
-            <td className="right mono"><strong>{fmt(total)}</strong></td>
-          </tr>
-        </tfoot>
-      </table>
+      <div className="cost-breakdown__rows">
+        {rows.map(r => (
+          <div key={r.label} className="cost-breakdown__row">
+            <span className="cost-breakdown__row-label">{r.label}</span>
+            <span className="cost-breakdown__row-tokens">{fmtTokens(r.tokens)}</span>
+            <span className="cost-breakdown__row-rate">${r.rate.toFixed(2)}/M</span>
+            <span className="cost-breakdown__row-cost">{fmt(r.tokens / M * r.rate)}</span>
+          </div>
+        ))}
+        <div className="cost-breakdown__divider" />
+        <div className="cost-breakdown__row cost-breakdown__row--subtotal">
+          <span className="cost-breakdown__row-label">Subtotal</span>
+          <span className="cost-breakdown__row-tokens" />
+          <span className="cost-breakdown__row-rate" />
+          <span className="cost-breakdown__row-cost">{fmt(subtotal)}</span>
+        </div>
+        {vatRate > 0 && (
+          <div className="cost-breakdown__row cost-breakdown__row--vat">
+            <span className="cost-breakdown__row-label">VAT {vatRate}%</span>
+            <span className="cost-breakdown__row-tokens" />
+            <span className="cost-breakdown__row-rate" />
+            <span className="cost-breakdown__row-cost">{fmt(vat)}</span>
+          </div>
+        )}
+        <div className="cost-breakdown__row cost-breakdown__row--total">
+          <span className="cost-breakdown__row-label">{vatRate > 0 ? 'Total incl. VAT' : 'Total'}</span>
+          <span className="cost-breakdown__row-tokens" />
+          <span className="cost-breakdown__row-rate" />
+          <span className="cost-breakdown__row-cost">{fmt(total)}</span>
+        </div>
+      </div>
       <div className="cost-breakdown__note">
-        Estimated from published Anthropic pricing. Actual billed amount may vary.
-        {vatRate === 0 && ' EU customers: set your VAT rate in Settings.'}
+        Estimated from Anthropic published pricing.{vatRate === 0 && ' Set VAT rate in Settings for EU totals.'}
       </div>
     </div>
   );
 }
 
-export default function SessionDetail({ session, vatRate = 0 }) {
+function LabelEditor({ sessionId, value, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+
+  useEffect(() => { setDraft(value || ''); }, [value]);
+
+  function save() {
+    const trimmed = draft.trim();
+    fetch(`/api/sessions/${encodeURIComponent(sessionId)}/label`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: trimmed || null }),
+    })
+      .then(r => r.json())
+      .then(d => { onChange(d.label); setEditing(false); })
+      .catch(() => setEditing(false));
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        className="label-input"
+        value={draft}
+        placeholder="Add a label…"
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); } }}
+        onBlur={save}
+      />
+    );
+  }
+  return (
+    <button className="label-trigger" onClick={() => setEditing(true)} title="Click to edit label">
+      {value || <span className="label-trigger__empty">+ add label</span>}
+    </button>
+  );
+}
+
+export default function SessionDetail({ session, vatRate = 0, onLabelChange }) {
   const [activeTab, setActiveTab] = useState('transcript');
   const [transcript, setTranscript] = useState(null);
   const [diff, setDiff] = useState(null);
   const [loadingTranscript, setLoadingTranscript] = useState(false);
   const [loadingDiff, setLoadingDiff] = useState(false);
+  const [label, setLabel] = useState(session?.label ?? null);
+
+  useEffect(() => { setLabel(session?.label ?? null); }, [session?.id]);
 
   useEffect(() => {
     if (!session) return;
@@ -259,7 +294,18 @@ export default function SessionDetail({ session, vatRate = 0 }) {
 
       <div className="detail-header">
         <div className="detail-header__id">{session.id}</div>
-        <div className="detail-header__command">{(session.command || []).join(' ') || '—'}</div>
+        {session.description && (
+          <div className="detail-header__description">{session.description}</div>
+        )}
+      </div>
+
+      <div className="detail-label-row">
+        <span className="detail-label-row__key">Label</span>
+        <LabelEditor
+          sessionId={session.id}
+          value={label}
+          onChange={v => { setLabel(v); onLabelChange?.(session.id, v); }}
+        />
       </div>
 
       <div className="detail-meta-grid">
@@ -272,24 +318,9 @@ export default function SessionDetail({ session, vatRate = 0 }) {
           <div className="detail-meta-item__value">{formatDuration(session.duration_ms)}</div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Agent</div>
-          <div className="detail-meta-item__value">{session.agent || '—'}</div>
-        </div>
-        <div className="detail-meta-item">
           <div className="detail-meta-item__label">Model</div>
           <div className="detail-meta-item__value" style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>{session.model || '—'}</div>
         </div>
-        {(session.profile || session.account_key_prefix) && (
-          <div className="detail-meta-item">
-            <div className="detail-meta-item__label">Account</div>
-            <div className="detail-meta-item__value">
-              {session.profile
-                ? session.profile
-                : <span style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>{session.account_key_prefix}…</span>
-              }
-            </div>
-          </div>
-        )}
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Status</div>
           <div className="detail-meta-item__value">
@@ -305,62 +336,43 @@ export default function SessionDetail({ session, vatRate = 0 }) {
           </div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Total Tokens</div>
+          <div className="detail-meta-item__label">Tokens</div>
           <div className="detail-meta-item__value">{formatTokens(displayTotal)}</div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Input</div>
-          <div className="detail-meta-item__value">{formatTokens(usage?.input_tokens)}</div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Output</div>
           <div className="detail-meta-item__value">{formatTokens(usage?.output_tokens)}</div>
         </div>
-        {cacheCreation != null && (
-          <div className="detail-meta-item">
-            <div className="detail-meta-item__label">Cache Write</div>
-            <div className="detail-meta-item__value">{formatTokens(cacheCreation)}</div>
-          </div>
+        <div className="detail-meta-item">
+          <div className="detail-meta-item__label">Cache Reads</div>
+          <div className="detail-meta-item__value" title="Context re-reads across turns — not counted in total">{formatTokens(cacheReads)}</div>
+        </div>
+        {gitAvailable && (
+          <>
+            <div className="detail-meta-item">
+              <div className="detail-meta-item__label">Files Changed</div>
+              <div className="detail-meta-item__value">{session.diff?.files_changed ?? '—'}</div>
+            </div>
+            <div className="detail-meta-item">
+              <div className="detail-meta-item__label">Branch</div>
+              <div className="detail-meta-item__value">{gitBranch || '—'}</div>
+            </div>
+            <div className="detail-meta-item">
+              <div className="detail-meta-item__label">Commit</div>
+              <div className="detail-meta-item__value" style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>
+                {git?.commit ? git.commit.slice(0, 8) : '—'}
+              </div>
+            </div>
+          </>
         )}
-        {cacheReads != null && cacheReads > 0 && (
+        {(session.profile || session.account_key_prefix) && (
           <div className="detail-meta-item">
-            <div className="detail-meta-item__label">Cache Reads</div>
-            <div className="detail-meta-item__value" title="Re-reads of cached context across turns — not counted in total">
-              {formatTokens(cacheReads)}
+            <div className="detail-meta-item__label">Account</div>
+            <div className="detail-meta-item__value">
+              {session.profile || <span style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>{session.account_key_prefix}…</span>}
             </div>
           </div>
         )}
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Files Changed</div>
-          <div className="detail-meta-item__value">
-            {!gitAvailable
-              ? <span style={{ color: '#9ca3af', fontSize: 11 }}>no git</span>
-              : (session.diff?.files_changed ?? '—')
-            }
-          </div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Branch</div>
-          <div className="detail-meta-item__value">
-            {!gitAvailable
-              ? <span style={{ color: '#9ca3af', fontSize: 11 }}>no git</span>
-              : (gitBranch || '—')
-            }
-          </div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Commit</div>
-          <div className="detail-meta-item__value" style={{ fontFamily: 'Menlo, monospace', fontSize: 12 }}>
-            {!gitAvailable
-              ? <span style={{ color: '#9ca3af', fontSize: 11, fontFamily: 'inherit' }}>no git</span>
-              : (git?.commit ? git.commit.slice(0, 8) : '—')
-            }
-          </div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Label</div>
-          <div className="detail-meta-item__value">{session.label || '—'}</div>
-        </div>
       </div>
 
       {warnings.length > 0 && (

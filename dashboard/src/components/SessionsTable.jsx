@@ -130,7 +130,14 @@ export default function SessionsTable({ sessions, selectedId, onSelect, vatRate 
               className={session.id === selectedId ? 'selected' : ''}
             >
               <td>{formatDate(session.started_at || session.completed_at)}</td>
-              <td className="muted" style={{ fontFamily: 'Menlo, monospace', fontSize: 11 }}>{session.model ? session.model.replace('claude-', '') : '—'}</td>
+              <td>
+                <div style={{ fontFamily: 'Menlo, monospace', fontSize: 11, color: '#6b7280' }}>{session.model ? session.model.replace('claude-', '') : '—'}</div>
+                {(session.label || session.description) && (
+                  <div style={{ fontSize: 11, color: '#374151', marginTop: 2, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {session.label || session.description}
+                  </div>
+                )}
+              </td>
               <td className="muted">{formatTokens(effectiveTokens(session.usage))}</td>
               <td className="muted">{(() => { const { value, estimated } = sessionCost(session); const v = value != null ? value * (1 + vatRate / 100) : null; return formatCost(v, estimated); })()}</td>
               <td className="muted">{session.diff?.files_changed ?? '—'}</td>

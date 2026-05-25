@@ -20,6 +20,12 @@ function formatTokens(value) {
   return String(value);
 }
 
+function effectiveTokens(usage) {
+  if (!usage) return null;
+  if ('cache_creation_tokens' in usage) return usage.total_tokens;
+  return (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+}
+
 function formatDuration(ms) {
   if (ms == null || isNaN(ms)) return '—';
   if (ms < 1000) return `${ms}ms`;
@@ -32,7 +38,7 @@ function formatDuration(ms) {
 const COLUMNS = [
   { key: 'started_at', label: 'Date', sortFn: (a, b) => (a.started_at || a.completed_at || '').localeCompare(b.started_at || b.completed_at || '') },
   { key: 'model', label: 'Model', sortFn: (a, b) => (a.model || '').localeCompare(b.model || '') },
-  { key: 'total_tokens', label: 'Tokens', sortFn: (a, b) => (a.usage?.total_tokens ?? -1) - (b.usage?.total_tokens ?? -1) },
+  { key: 'total_tokens', label: 'Tokens', sortFn: (a, b) => (effectiveTokens(a.usage) ?? -1) - (effectiveTokens(b.usage) ?? -1) },
   { key: 'cost_usd', label: 'Cost', sortFn: (a, b) => (a.usage?.cost_usd ?? -1) - (b.usage?.cost_usd ?? -1) },
   { key: 'files_changed', label: 'Files', sortFn: (a, b) => (a.diff?.files_changed ?? -1) - (b.diff?.files_changed ?? -1) },
   { key: 'duration_ms', label: 'Duration', sortFn: (a, b) => (a.duration_ms ?? -1) - (b.duration_ms ?? -1) },
@@ -99,7 +105,7 @@ export default function SessionsTable({ sessions, selectedId, onSelect }) {
             >
               <td>{formatDate(session.started_at || session.completed_at)}</td>
               <td className="muted" style={{ fontFamily: 'Menlo, monospace', fontSize: 11 }}>{session.model ? session.model.replace('claude-', '') : '—'}</td>
-              <td className="muted">{formatTokens(session.usage?.total_tokens)}</td>
+              <td className="muted">{formatTokens(effectiveTokens(session.usage))}</td>
               <td className="muted">{formatCost(session.usage?.cost_usd)}</td>
               <td className="muted">{session.diff?.files_changed ?? '—'}</td>
               <td className="muted">{formatDuration(session.duration_ms)}</td>

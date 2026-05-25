@@ -71,8 +71,9 @@ export function extractFromTranscript(lines) {
     }
   }
 
-  const cached = rawUsage.cache_creation_input_tokens + rawUsage.cache_read_input_tokens;
-  const total = rawUsage.input_tokens + cached + rawUsage.output_tokens;
+  // total_tokens excludes cache_read_tokens: those are repeated context reads,
+  // not new work. Summing them across turns inflates the count by 10-100x.
+  const total = rawUsage.input_tokens + rawUsage.cache_creation_input_tokens + rawUsage.output_tokens;
 
   return {
     cwd,
@@ -82,7 +83,8 @@ export function extractFromTranscript(lines) {
     entrypoint,
     usage: hasUsage ? {
       input_tokens: rawUsage.input_tokens,
-      cached_input_tokens: cached,
+      cache_creation_tokens: rawUsage.cache_creation_input_tokens,
+      cache_read_tokens: rawUsage.cache_read_input_tokens,
       output_tokens: rawUsage.output_tokens,
       reasoning_output_tokens: 0,
       total_tokens: total

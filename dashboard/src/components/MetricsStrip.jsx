@@ -15,9 +15,17 @@ function formatTokens(value) {
   return String(value);
 }
 
+function effectiveTokens(usage) {
+  if (!usage) return 0;
+  // Old format: cached_input_tokens combines creation+reads, total_tokens is inflated.
+  // New format: cache_creation_tokens is separate, total_tokens is correct.
+  if ('cache_creation_tokens' in usage) return usage.total_tokens ?? 0;
+  return (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+}
+
 export default function MetricsStrip({ sessions }) {
   const totalCost = sessions.reduce((sum, s) => sum + (s.usage?.cost_usd ?? 0), 0);
-  const totalTokens = sessions.reduce((sum, s) => sum + (s.usage?.total_tokens ?? 0), 0);
+  const totalTokens = sessions.reduce((sum, s) => sum + effectiveTokens(s.usage), 0);
   const sessionCount = sessions.length;
   const avgCost = sessionCount > 0 ? totalCost / sessionCount : null;
 

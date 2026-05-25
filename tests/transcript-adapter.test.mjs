@@ -41,9 +41,11 @@ test('extractFromTranscript sums token usage across assistant turns', () => {
 
   const result = extractFromTranscript(lines);
   assert.equal(result.usage.input_tokens, 15);
-  assert.equal(result.usage.cached_input_tokens, 1000); // 500+200+0+300
+  assert.equal(result.usage.cache_creation_tokens, 500);  // 500+0
+  assert.equal(result.usage.cache_read_tokens, 500);       // 200+300
   assert.equal(result.usage.output_tokens, 80);
-  assert.equal(result.usage.total_tokens, 1095);
+  // total excludes cache_read to avoid counting repeated context reads
+  assert.equal(result.usage.total_tokens, 595);  // 15+500+80
 });
 
 test('extractFromTranscript returns null usage when no assistant messages have usage', () => {

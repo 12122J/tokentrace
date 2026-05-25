@@ -33,6 +33,19 @@ function formatTokens(value) {
   return String(value);
 }
 
+// Old run.json format stores cache_creation+cache_read combined in cached_input_tokens,
+// which inflates total_tokens massively. New format separates them.
+function resolveUsageTokens(usage) {
+  if (!usage) return { total: null, cacheCreation: null, cacheReads: null };
+  const isNewFormat = 'cache_creation_tokens' in usage;
+  const total = isNewFormat
+    ? usage.total_tokens
+    : (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+  const cacheCreation = isNewFormat ? usage.cache_creation_tokens : null;
+  const cacheReads = isNewFormat ? usage.cache_read_tokens : usage.cached_input_tokens;
+  return { total, cacheCreation, cacheReads };
+}
+
 function buildWarnings(session) {
   const warnings = [];
   if (session.exit_code !== 0) {
@@ -125,6 +138,7 @@ export default function SessionDetail({ session }) {
   const usage = session.usage;
   const git = session.git?.after;
   const gitBranch = session.git?.branch || git?.branch;
+  const { total: displayTotal, cacheCreation, cacheReads } = resolveUsageTokens(usage);
 
   return (
     <div className="detail-panel">
@@ -177,23 +191,27 @@ export default function SessionDetail({ session }) {
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Total Tokens</div>
-          <div className="detail-meta-item__value">{formatTokens(usage?.total_tokens)}</div>
+          <div className="detail-meta-item__value">{formatTokens(displayTotal)}</div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Input / Cache</div>
-          <div className="detail-meta-item__value">
-            {usage ? `${formatTokens(usage.input_tokens)} / ${formatTokens(usage.cached_input_tokens)}` : '—'}
-          </div>
+          <div className="detail-meta-item__label">Input</div>
+          <div className="detail-meta-item__value">{formatTokens(usage?.input_tokens)}</div>
         </div>
         <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Output Tokens</div>
+          <div className="detail-meta-item__label">Output</div>
           <div className="detail-meta-item__value">{formatTokens(usage?.output_tokens)}</div>
         </div>
-        {usage?.cached_input_tokens != null && usage.cached_input_tokens > 0 && (
+        {cacheCreation != null && (
           <div className="detail-meta-item">
-            <div className="detail-meta-item__label">Cache Hit Rate</div>
-            <div className="detail-meta-item__value">
-              {((usage.cached_input_tokens / (usage.input_tokens + usage.cached_input_tokens)) * 100).toFixed(1)}%
+            <div className="detail-meta-item__label">Cache Write</div>
+            <div className="detail-meta-item__value">{formatTokens(cacheCreation)}</div>
+          </div>
+        )}
+        {cacheReads != null && cacheReads > 0 && (
+          <div className="detail-meta-item">
+            <div className="detail-meta-item__label">Cache Reads</div>
+            <div className="detail-meta-item__value" title="Re-reads of cached context across turns — not counted in total">
+              {formatTokens(cacheReads)}
             </div>
           </div>
         )}

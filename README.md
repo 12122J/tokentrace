@@ -7,13 +7,12 @@ usage, trust warnings — as plain files you can inspect, share, or attach to a 
 No hosted service. No signup. Zero runtime dependencies.
 
 ```bash
-# one-time setup
+npm install -g agent-flight-recorder
 afr install
+# every Claude Code session is now automatically recorded
 
-# now every Claude Code session is automatically recorded
-# when you close Claude Code, run:
 afr summarize
-# 2026-05-24T08:04Z   ok   tokens=10215677   changed=3   claude
+# 2026-05-24T08:04Z   ok   tokens=10,215,677   changed=3   claude
 ```
 
 ## Why
@@ -48,10 +47,8 @@ The trace stays on your machine. You decide what to share.
 ## Getting Started
 
 ```bash
-git clone https://github.com/12122J/agent-flight-recorder.git
-cd agent-flight-recorder
-npm test
-node bin/afr.mjs install
+npm install -g agent-flight-recorder
+afr install
 ```
 
 `afr install` adds a Stop hook to `~/.claude/settings.json`. From that point on, every Claude Code session is automatically recorded when you close it — no changes to how you work.
@@ -59,7 +56,7 @@ node bin/afr.mjs install
 After your next Claude Code session:
 
 ```bash
-node bin/afr.mjs summarize
+afr summarize
 ```
 
 ```
@@ -79,7 +76,8 @@ Sessions are stored in `~/.afr/runs/` — one folder per session, named by sessi
 `afr install` registers a Stop hook with Claude Code. Every interactive session is recorded automatically when it ends — token usage, git diff, full transcript, tool calls.
 
 ```bash
-node bin/afr.mjs install
+npm install -g agent-flight-recorder
+afr install
 # Installed afr Stop hook → ~/.claude/settings.json
 # Every Claude Code session will now be recorded to ~/.afr/runs/
 ```
@@ -171,7 +169,7 @@ Warnings are conservative — they prompt inspection, not rejection.
 ## Status
 
 Working MVP. All three adapters are tested and verified against real runs.
-The npm package is not yet published; run from a checkout for now.
+Available on npm: `npm install -g agent-flight-recorder`
 
 ## Principles
 

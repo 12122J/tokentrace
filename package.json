@@ -4,7 +4,8 @@
   "description": "Open telemetry for coding-agent runs.",
   "type": "module",
   "bin": {
-    "afr": "bin/afr.mjs"
+    "afr": "bin/afr.mjs",
+    "afr-mcp": "bin/afr-mcp.mjs"
   },
   "files": [
     "bin",
@@ -38,5 +39,8 @@
     "url": "https://github.com/12122J/agent-flight-recorder/issues"
   },
   "homepage": "https://github.com/12122J/agent-flight-recorder#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
 }

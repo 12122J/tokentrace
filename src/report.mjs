@@ -7,7 +7,7 @@ export function renderSummaryMarkdown(run) {
   const usage = run.usage || {};
   const diff = run.diff || {};
   const warnings = buildRunWarnings(run);
-  return `# Agent Flight Recorder Run
+  return `# TokenTrace Run
 
 **Run ID**: ${run.id}
 **Agent**: ${run.agent || 'unknown'}
@@ -43,7 +43,7 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent Flight Recorder - ${escapeHtml(run.id)}</title>
+  <title>TokenTrace - ${escapeHtml(run.id)}</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -116,7 +116,7 @@ export function renderHtmlReport(run, transcript = '', patch = '', events = []) 
 </head>
 <body>
   <main>
-    <h1>Agent Flight Recorder</h1>
+    <h1>TokenTrace</h1>
     <p><strong>${escapeHtml(run.id)}</strong></p>
     <div class="grid">
       ${metric('Agent', run.agent || 'unknown')}

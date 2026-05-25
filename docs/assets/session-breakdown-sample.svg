@@ -1,0 +1,75 @@
+<svg width="1000" height="620" viewBox="0 0 1000 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1000" height="620" fill="#ffffff"/>
+  <rect x="38" y="34" width="924" height="552" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="68" y="76" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="600" letter-spacing=".06em" fill="#6b7280">SESSION DETAIL</text>
+  <text x="68" y="112" font-family="Menlo, monospace" font-size="13" fill="#111827">2bce0122-17f1-4058-b65e-71dc566e0837</text>
+  <text x="68" y="140" font-family="Inter, Arial, sans-serif" font-size="14" fill="#374151">Prepare TokenTrace for public release</text>
+
+  <g transform="translate(68 170)">
+    <text x="0" y="18" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">LABEL</text>
+    <rect x="54" y="0" width="142" height="28" rx="4" fill="#ffffff" stroke="#d1d5db" stroke-dasharray="4 4"/>
+    <text x="68" y="19" font-family="Inter, Arial, sans-serif" font-size="12" fill="#374151">release prep</text>
+  </g>
+
+  <g transform="translate(68 230)">
+    <g>
+      <rect width="152" height="64" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="14" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">COMPLETED</text>
+      <text x="14" y="46" font-family="Inter, Arial, sans-serif" font-size="13" fill="#111827">May 25, 12:10</text>
+    </g>
+    <g transform="translate(168 0)">
+      <rect width="152" height="64" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="14" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">MODEL</text>
+      <text x="14" y="46" font-family="Menlo, monospace" font-size="12" fill="#111827">claude-sonnet-4-6</text>
+    </g>
+    <g transform="translate(336 0)">
+      <rect width="152" height="64" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="14" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">EST. COST +21%</text>
+      <text x="14" y="46" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">~$45.88</text>
+    </g>
+    <g transform="translate(504 0)">
+      <rect width="152" height="64" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="14" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">TOKENS</text>
+      <text x="14" y="46" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">1.76M</text>
+    </g>
+    <g transform="translate(672 0)">
+      <rect width="152" height="64" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="14" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#9ca3af">CACHE READS</text>
+      <text x="14" y="46" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">87.47M</text>
+    </g>
+  </g>
+
+  <g transform="translate(68 330)">
+    <rect width="824" height="218" fill="#ffffff" stroke="#e5e7eb"/>
+    <rect width="824" height="36" fill="#fafafa"/>
+    <text x="14" y="24" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing=".06em" fill="#6b7280">COST BREAKDOWN</text>
+
+    <text x="18" y="64" font-family="Inter, Arial, sans-serif" font-size="12" fill="#374151">Input</text>
+    <text x="260" y="64" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">1.3K</text>
+    <text x="400" y="64" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">$3.00/M</text>
+    <text x="780" y="64" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$0.0038</text>
+
+    <text x="18" y="92" font-family="Inter, Arial, sans-serif" font-size="12" fill="#374151">Cache write</text>
+    <text x="260" y="92" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">1.21M</text>
+    <text x="400" y="92" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">$3.75/M</text>
+    <text x="780" y="92" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$4.53</text>
+
+    <text x="18" y="120" font-family="Inter, Arial, sans-serif" font-size="12" fill="#374151">Cache reads</text>
+    <text x="260" y="120" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">87.47M</text>
+    <text x="400" y="120" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">$0.30/M</text>
+    <text x="780" y="120" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$26.24</text>
+
+    <text x="18" y="148" font-family="Inter, Arial, sans-serif" font-size="12" fill="#374151">Output</text>
+    <text x="260" y="148" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">428.4K</text>
+    <text x="400" y="148" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#6b7280">$15.00/M</text>
+    <text x="780" y="148" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$6.43</text>
+
+    <line x1="18" y1="162" x2="806" y2="162" stroke="#e5e7eb"/>
+    <text x="18" y="182" font-family="Inter, Arial, sans-serif" font-size="12" fill="#6b7280">Subtotal</text>
+    <text x="780" y="182" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$37.20</text>
+    <text x="18" y="208" font-family="Inter, Arial, sans-serif" font-size="12" fill="#6b7280">VAT 21%</text>
+    <text x="780" y="208" font-family="Menlo, monospace" font-size="11" text-anchor="end" fill="#111827">$7.81</text>
+  </g>
+
+  <text x="68" y="554" font-family="Inter, Arial, sans-serif" font-size="12" fill="#6b7280">Cache reads are shown separately because repeated context reads can be large and cheap. Total tokens exclude cache reads.</text>
+</svg>

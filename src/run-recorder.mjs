@@ -1,10 +1,13 @@
 import { spawn } from 'node:child_process';
-import { appendFile, writeFile } from 'node:fs/promises';
+import { appendFile, readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { observeClaudeCodeLine } from './adapters/claude-code.mjs';
-import { observeCodexLine } from './adapters/codex.mjs';
+import { observeCodexLine, parseCodexJsonLine } from './adapters/codex.mjs';
 import { EventWriter } from './event-writer.mjs';
 import { countPatchFiles, getGitDiff, getGitSnapshot } from './git.mjs';
+import { loadPricingDb } from './pricing-db.mjs';
+import { estimateCostUsdSync } from './pricing.mjs';
 import { regenerateReport } from './report.mjs';
 import { detectAgent, ensureDir, makeRunId, nowIso, writeJson } from './util.mjs';
 
@@ -13,7 +16,8 @@ export async function recordRun({
   cwd = process.cwd(),
   runsRoot = join(cwd, '.tokentrace', 'runs'),
   agent = 'auto',
-  label = null
+  label = null,
+  pricingDb
 }) {
   if (!Array.isArray(command) || command.length === 0) {
     throw new Error('recordRun requires a non-empty command array');
@@ -52,6 +56,17 @@ export async function recordRun({
   const gitAfter = await getGitSnapshot(resolvedCwd);
   const patch = await getGitDiff(resolvedCwd);
   await writeFile(diffPath, patch);
+  const model = observations.model ?? await inferRunModel(command, runAgent);
+  const usage = observations.usage ? { ...observations.usage } : null;
+  if (usage && usage.cost_usd == null && model) {
+    const db = pricingDb === undefined ? await loadPricingDb() : pricingDb;
+    if (db) {
+      const cost = estimateCostUsdSync(model, usage, db);
+      if (cost != null) {
+        usage.cost_usd = cost;
+      }
+    }
+  }
 
   const run = {
     id: runId,
@@ -60,6 +75,8 @@ export async function recordRun({
     cwd: resolvedCwd,
     agent: runAgent,
     label,
+    description: observations.description,
+    model,
     started_at: startedAt,
     completed_at: completedAt,
     duration_ms: Date.now() - startedMs,
@@ -69,7 +86,7 @@ export async function recordRun({
       before: gitBefore,
       after: gitAfter
     },
-    usage: observations.usage,
+    usage,
     session: observations.session ?? null,
     tools: observations.tools,
     files: observations.files,
@@ -117,16 +134,20 @@ function runChild(command, cwd, agent, transcriptPath, writer, observations) {
 
     child.stdout.on('data', (chunk) => {
       const text = chunk.toString('utf8');
-      pendingWrites.push(appendTranscript(transcriptPath, text));
+      if (agent !== 'codex') {
+        pendingWrites.push(appendTranscript(transcriptPath, text));
+      }
       pendingWrites.push(writer.write('process.stdout', { text }));
-      stdoutRemainder = observeLines(stdoutRemainder, text, agent, writer, observations, pendingWrites);
+      stdoutRemainder = observeLines(stdoutRemainder, text, agent, 'stdout', transcriptPath, writer, observations, pendingWrites);
     });
 
     child.stderr.on('data', (chunk) => {
       const text = chunk.toString('utf8');
-      pendingWrites.push(appendTranscript(transcriptPath, text));
+      if (agent !== 'codex') {
+        pendingWrites.push(appendTranscript(transcriptPath, text));
+      }
       pendingWrites.push(writer.write('process.stderr', { text }));
-      stderrRemainder = observeLines(stderrRemainder, text, agent, writer, observations, pendingWrites);
+      stderrRemainder = observeLines(stderrRemainder, text, agent, 'stderr', transcriptPath, writer, observations, pendingWrites);
     });
 
     child.on('error', (error) => {
@@ -135,8 +156,8 @@ function runChild(command, cwd, agent, transcriptPath, writer, observations) {
 
     child.on('close', async (code, signal) => {
       try {
-        flushLine(stdoutRemainder, agent, writer, observations, pendingWrites);
-        flushLine(stderrRemainder, agent, writer, observations, pendingWrites);
+        flushLine(stdoutRemainder, agent, 'stdout', transcriptPath, writer, observations, pendingWrites);
+        flushLine(stderrRemainder, agent, 'stderr', transcriptPath, writer, observations, pendingWrites);
         await Promise.all(pendingWrites);
         if (signal) {
           await writer.write('process.signal', { signal });
@@ -153,19 +174,19 @@ async function appendTranscript(path, text) {
   await appendFile(path, text);
 }
 
-function observeLines(remainder, text, agent, writer, observations, pendingWrites) {
+function observeLines(remainder, text, agent, stream, transcriptPath, writer, observations, pendingWrites) {
   const combined = remainder + text;
   const lines = combined.split(/\r?\n/);
   const nextRemainder = lines.pop() ?? '';
 
   for (const line of lines) {
-    flushLine(line, agent, writer, observations, pendingWrites);
+    flushLine(line, agent, stream, transcriptPath, writer, observations, pendingWrites);
   }
 
   return nextRemainder;
 }
 
-function flushLine(line, agent, writer, observations, pendingWrites) {
+function flushLine(line, agent, stream, transcriptPath, writer, observations, pendingWrites) {
   if (!line.trim()) return;
 
   let lineObservations = [];
@@ -178,6 +199,13 @@ function flushLine(line, agent, writer, observations, pendingWrites) {
   for (const observation of lineObservations) {
     applyObservation(observations, observation);
     pendingWrites.push(writer.write(observation.type, withoutType(observation)));
+    if (observation.type === 'message.agent') {
+      pendingWrites.push(appendTranscript(transcriptPath, `[assistant]\n${observation.text.trim()}\n\n`));
+    }
+  }
+
+  if (agent === 'codex' && stream === 'stdout' && lineObservations.length === 0 && !parseCodexJsonLine(line)) {
+    pendingWrites.push(appendTranscript(transcriptPath, `${line}\n`));
   }
 }
 
@@ -185,6 +213,8 @@ function createObservationState() {
   return {
     usage: null,
     session: null,
+    model: null,
+    description: null,
     tools: {
       command_count: 0,
       commands: []
@@ -219,6 +249,21 @@ function applyObservation(state, observation) {
     };
   }
 
+  if (observation.type === 'model.detected') {
+    state.model = observation.model;
+  }
+
+  if (observation.type === 'session.thread') {
+    state.session = {
+      ...(state.session ?? {}),
+      session_id: observation.session_id
+    };
+  }
+
+  if (observation.type === 'message.agent') {
+    state.description = state.description ?? observation.text.trim().slice(0, 160);
+  }
+
   if (observation.type === 'tool.command') {
     state.tools.command_count += 1;
     state.tools.commands.push({
@@ -233,6 +278,42 @@ function applyObservation(state, observation) {
       path: observation.path,
       bytes: observation.bytes
     });
+  }
+}
+
+async function inferRunModel(command, agent) {
+  const cliModel = inferModelFromArgs(command);
+  if (cliModel) return cliModel;
+  if (agent === 'codex') {
+    return readCodexConfiguredModel();
+  }
+  return null;
+}
+
+function inferModelFromArgs(command) {
+  for (let index = 0; index < command.length; index += 1) {
+    const arg = command[index];
+    if ((arg === '--model' || arg === '-m') && command[index + 1]) {
+      return command[index + 1];
+    }
+    if (arg?.startsWith('--model=')) {
+      return arg.slice('--model='.length);
+    }
+    if (arg === '-c' && typeof command[index + 1] === 'string') {
+      const match = command[index + 1].match(/^model\s*=\s*"?([^"]+)"?$/);
+      if (match) return match[1];
+    }
+  }
+  return null;
+}
+
+async function readCodexConfiguredModel() {
+  try {
+    const config = await readFile(join(homedir(), '.codex', 'config.toml'), 'utf8');
+    const match = config.match(/^model\s*=\s*"([^"]+)"/m);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
   }
 }
 

@@ -2,17 +2,18 @@
 
 Know what your coding agent actually did — and what it cost.
 
-`tt` wraps any agent run and writes a local trace — transcript, git diff, token
-usage, cost — as plain files you can inspect, share, or attach to a PR.
+`tt` records supported coding-agent sessions and CLI runs, then writes a local
+trace — transcript, git diff, token usage, cost — as plain files you can
+inspect, share, or attach to a PR.
 No hosted service. No signup. Zero runtime dependencies.
 
 ```bash
 npm install -g @j___avi/tokentrace
 tt install
-# every Claude Code session is now automatically recorded
+# Claude Code CLI sessions are now recorded automatically when they end
 
 tt summarize
-# 2026-05-24   ok   tokens=10,215,677   cost=$4.1020   changed=3   claude
+# 2026-05-25   ok   tokens=1,762,228   cost=$37.9232   changed=4   claude
 ```
 
 ## Why
@@ -33,9 +34,9 @@ The trace stays on your machine. You decide what to share.
 **Track what you're actually spending.** Claude Code sessions can quietly run up large token counts. `tt summarize` gives you a line per session — tokens, cost, files changed, date — so you can see where your usage goes.
 
 ```
-2026-05-24   ok   tokens=10,215,677   cost=$4.1020   changed=3   claude
-2026-05-23   ok   tokens=4,302,819    cost=$1.7231   changed=7   claude
-2026-05-22   ok   tokens=892,041      changed=0   claude
+2026-05-25   ok   tokens=1,762,228   cost=$37.9232   changed=4   claude
+2026-05-24   ok   tokens=452,104     cost=$3.1210    changed=7   codex
+2026-05-22   ok   tokens=892,041     cost=$1.0204    changed=0   claude
 ```
 
 **Attach evidence to a PR.** When an agent writes or refactors code, reviewers are often asked to trust the result blindly. Drop `summary.md` or `diff.patch` into the PR description so reviewers can see the transcript and what actually changed.
@@ -51,7 +52,7 @@ npm install -g @j___avi/tokentrace
 tt install
 ```
 
-`tt install` adds a Stop hook to `~/.claude/settings.json`. From that point on, every Claude Code session is automatically recorded when you close it — no changes to how you work.
+`tt install` adds a Stop hook to `~/.claude/settings.json`. From that point on, Claude Code CLI sessions are automatically recorded when they end — no wrapper command needed.
 
 After your next Claude Code session:
 
@@ -60,7 +61,7 @@ tt summarize
 ```
 
 ```
-2026-05-24T08:04Z   ok   tokens=10215677   cost=$4.1020   changed=3   claude
+2026-05-25T10:20Z   ok   tokens=1762228   cost=$37.9232   changed=4   claude
 ```
 
 Open the full report:
@@ -71,23 +72,52 @@ open ~/.tokentrace/runs/<session-id>/report.html
 
 Sessions are stored in `~/.tokentrace/runs/` — one folder per session, named by session ID.
 
+## Dashboard
+
+Run the local dashboard to browse sessions, compare cost over time, inspect transcripts and diffs, set an EU VAT rate, and add your own labels.
+
+```bash
+tt serve
+```
+
+![TokenTrace dashboard overview](docs/assets/dashboard-overview.svg)
+
+Each session includes an estimated pricing breakdown. Cache reads are displayed separately because they can be huge across long agent sessions, but they are not counted as "total tokens" in the dashboard.
+
+![TokenTrace session cost breakdown](docs/assets/session-breakdown-sample.svg)
+
+## Current Limitations
+
+TokenTrace is early and intentionally honest about what it can see today.
+
+| Surface | Current support |
+| --- | --- |
+| Claude Code CLI | Automatic after `tt install`, via Claude Code Stop hooks. |
+| Codex CLI | Works only when launched through `tt run -- codex exec --json ...`. |
+| Shell commands | Works only when launched through `tt run -- <command>`. |
+| Codex Desktop app | Not captured automatically yet. |
+| VS Code / IDE integrations | Not captured automatically yet. |
+| Browser-based agent sessions | Not captured automatically yet. |
+
+TokenTrace is not a global activity monitor. It can only record sessions exposed through a supported hook, wrapper, or log source. The next major product step is automatic capture for Codex and IDE/desktop surfaces, but that needs separate integrations rather than a README-level promise.
+
 ## Automatic Recording via Hooks
 
-`tt install` registers a Stop hook with Claude Code. Every interactive session is recorded automatically when it ends — token usage, git diff, full transcript, tool calls.
+`tt install` registers a Stop hook with Claude Code. Claude Code CLI sessions are recorded automatically when they end — token usage, git diff, transcript, tool calls.
 
 ```bash
 npm install -g @j___avi/tokentrace
 tt install
 # Installed tokentrace Stop hook → ~/.claude/settings.json
-# Every Claude Code session will now be recorded to .tokentrace/runs/
+# Claude Code CLI sessions will now be recorded to ~/.tokentrace/runs/
 ```
 
 To see all recorded sessions:
 
 ```bash
 tt summarize
-# 2026-05-24T08:22Z   ok   tokens=10215677   cost=$4.1020   changed=3   claude
-# 2026-05-23T14:11Z   ok   tokens=4302819    cost=$1.7231   changed=7   claude
+# 2026-05-25T10:20Z   ok   tokens=1762228   cost=$37.9232   changed=4   claude
+# 2026-05-24T18:43Z   ok   tokens=452104    cost=$3.1210    changed=7   codex
 ```
 
 To open the HTML report for a session:
@@ -113,7 +143,7 @@ To uninstall, remove the tokentrace entry from the `hooks.Stop` array in `~/.cla
   "mcpServers": {
     "tokentrace": {
       "command": "npx",
-      "args": ["@j___avi/tokentrace-mcp"]
+      "args": ["-y", "-p", "@j___avi/tokentrace", "tokentrace-mcp"]
     }
   }
 }
@@ -161,8 +191,9 @@ See [docs/RUN_FORMAT.md](docs/RUN_FORMAT.md) for full schema details.
 | Agent | Status | Notes |
 | --- | --- | --- |
 | Shell | Working | Any command — transcript, exit code, git state, diff. |
-| Claude Code | Working | Parses token usage and tool calls from `--output-format json` / `stream-json`. Auto-recorded via hooks. |
-| Codex | Working | Parses `turn.completed` usage from JSON output. |
+| Claude Code CLI | Working | Auto-recorded via Stop hook after `tt install`; also works through `tt run`. |
+| Codex CLI | Working with wrapper | Parses `turn.completed` usage from `codex exec --json`, but must be launched through `tt run` today. |
+| Codex Desktop / VS Code | Planned | Not automatically captured yet. Needs a dedicated integration or reliable session-log source. |
 
 **Claude Code** (auto-detected when running `claude`):
 
@@ -179,6 +210,8 @@ tt run -- claude --output-format stream-json -p "your prompt"
 ```bash
 tt run -- codex exec --json "your prompt"
 ```
+
+Codex runs are not automatic yet. If Codex is started from the desktop app, VS Code, or directly as `codex exec ...` without `tt run`, TokenTrace will not record that session today.
 
 **Any shell command** (no token usage, but transcript + git diff still recorded):
 

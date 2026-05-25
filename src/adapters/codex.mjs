@@ -18,6 +18,28 @@ export function observeCodexLine(line) {
   }
 
   const observations = [];
+  const model = extractModel(payload);
+  if (model) {
+    observations.push({
+      type: 'model.detected',
+      model
+    });
+  }
+
+  if (payload.type === 'thread.started' && payload.thread_id) {
+    observations.push({
+      type: 'session.thread',
+      session_id: payload.thread_id
+    });
+  }
+
+  if (payload.type === 'item.completed' && payload.item?.type === 'agent_message' && typeof payload.item.text === 'string') {
+    observations.push({
+      type: 'message.agent',
+      text: payload.item.text
+    });
+  }
+
   const usage = payload.usage || payload.token_usage;
   if (payload.type === 'turn.completed' && usage) {
     observations.push({
@@ -47,6 +69,13 @@ export function observeCodexLine(line) {
   }
 
   return observations;
+}
+
+function extractModel(payload) {
+  if (typeof payload.model === 'string') return payload.model;
+  if (typeof payload.item?.model === 'string') return payload.item.model;
+  if (typeof payload.message?.model === 'string') return payload.message.model;
+  return null;
 }
 
 function numberOrZero(value) {

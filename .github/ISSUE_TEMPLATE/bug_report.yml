@@ -14,7 +14,7 @@ body:
     id: reproduce
     attributes:
       label: How can we reproduce it?
-      description: Include the `afr` command, agent command, and relevant artifact snippets.
+      description: Include the `tt` command, agent command, and relevant artifact snippets.
     validations:
       required: true
   - type: textarea

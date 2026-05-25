@@ -23,6 +23,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [filterDays, setFilterDays] = useState(30);
+  const [pricingDb, setPricingDb] = useState(null);
   const [vatRate, setVatRate] = useState(() => {
     const stored = localStorage.getItem('tt_vat_rate');
     return stored != null ? Number(stored) : 0;
@@ -41,6 +42,11 @@ export default function App() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    fetch('/api/pricing')
+      .then(r => r.ok ? r.json() : null)
+      .then(db => { if (db) setPricingDb(db); })
+      .catch(() => {});
   }, []);
 
   const sessions = useMemo(() => filterByDays(allSessions, filterDays), [allSessions, filterDays]);
@@ -75,22 +81,24 @@ export default function App() {
           <div className="loading">Loading...</div>
         ) : (
           <>
-            <MetricsStrip sessions={sessions} vatRate={vatRate} />
+            <MetricsStrip sessions={sessions} vatRate={vatRate} pricingDb={pricingDb} />
             <div className="body-columns">
               <div className="col-left">
-                <CostChart sessions={sessions} vatRate={vatRate} />
+                <CostChart sessions={sessions} vatRate={vatRate} pricingDb={pricingDb} />
                 <div className="section-header">Sessions</div>
                 <SessionsTable
                   sessions={sessions}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
                   vatRate={vatRate}
+                  pricingDb={pricingDb}
                 />
               </div>
               <div className="col-right">
                 <SessionDetail
                   session={selectedSession}
                   vatRate={vatRate}
+                  pricingDb={pricingDb}
                   onLabelChange={(id, newLabel) => {
                     setAllSessions(prev => prev.map(s => s.id === id ? { ...s, label: newLabel } : s));
                   }}

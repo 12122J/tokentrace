@@ -70,3 +70,29 @@ tt install
 
 Adds a Stop hook to `~/.claude/settings.json`. Every session is recorded
 automatically to `~/.tokentrace/runs/` when it ends.
+
+## Browse Sessions In The Dashboard
+
+```bash
+tt serve
+```
+
+The dashboard opens at `http://localhost:7842` and shows cost over time,
+session labels, model names, token totals, transcripts, diffs, and per-session
+pricing breakdowns.
+
+## Refresh Model Pricing
+
+```bash
+tt pricing update
+tt pricing show
+```
+
+TokenTrace caches model pricing in `~/.tokentrace/pricing.json`. The bundled
+fallback covers common Claude and OpenAI models, while `tt pricing update`
+refreshes from LiteLLM's public pricing database.
+
+## Label A Session
+
+Open the dashboard with `tt serve`, select a session, then click `+ add label`.
+Labels are saved back into that session's `run.json`.

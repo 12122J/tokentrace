@@ -1,6 +1,6 @@
 {
   "name": "@j___avi/tokentrace",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Token tracing and session recording for coding agents.",
   "type": "module",
   "bin": {
@@ -11,6 +11,7 @@
     "bin",
     "dashboard/dist",
     "dashboard/server.mjs",
+    "docs/assets",
     "docs/EXAMPLES.md",
     "docs/PUBLIC_RELEASE_CHECKLIST.md",
     "docs/ROADMAP.md",
@@ -46,6 +47,7 @@
   "homepage": "https://github.com/12122J/tokentrace#readme",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.2.1"
   }
 }

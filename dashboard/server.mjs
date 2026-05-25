@@ -69,6 +69,16 @@ app.get('/api/sessions/:id/diff', async (req, res) => {
   }
 });
 
+app.get('/api/pricing', async (req, res) => {
+  try {
+    const { loadPricingDb } = await import('../src/pricing-db.mjs');
+    const db = await loadPricingDb();
+    res.json(db);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load pricing data', detail: err.message });
+  }
+});
+
 // --- Static serving ---
 
 if (existsSync(DIST_DIR)) {

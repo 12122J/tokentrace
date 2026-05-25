@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { lookupPrice, sessionCost } from '../pricing.js';
 
 function formatDate(isoString) {
   if (!isoString) return '—';
@@ -27,30 +28,6 @@ function formatCost(value, estimated = false) {
   return `${prefix}$${value.toFixed(4)}`;
 }
 
-const PRICING = [
-  { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-  { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
-  { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-  { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
-];
-
-function estimateCost(model, usage) {
-  if (!model || !usage) return null;
-  const p = PRICING.find(t => model.startsWith(t.prefix));
-  if (!p) return null;
-  const M = 1_000_000;
-  const cacheWrite = usage.cache_creation_tokens ?? 0;
-  const cacheRead  = usage.cache_read_tokens ?? usage.cached_input_tokens ?? 0;
-  return (
-    (usage.input_tokens  ?? 0) / M * p.input      +
-    cacheWrite           / M * p.cacheWrite         +
-    cacheRead            / M * p.cacheRead          +
-    (usage.output_tokens ?? 0) / M * p.output
-  );
-}
-
 function formatTokens(value) {
   if (value == null || isNaN(value)) return '—';
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
@@ -64,7 +41,7 @@ function resolveUsageTokens(usage) {
   if (!usage) return { total: null, cacheCreation: null, cacheReads: null };
   const isNewFormat = 'cache_creation_tokens' in usage;
   const total = isNewFormat
-    ? usage.total_tokens
+    ? usage.total_tokens ?? ((usage.input_tokens ?? 0) + (usage.cache_creation_tokens ?? 0) + (usage.output_tokens ?? 0))
     : (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
   const cacheCreation = isNewFormat ? usage.cache_creation_tokens : null;
   const cacheReads = isNewFormat ? usage.cache_read_tokens : usage.cached_input_tokens;
@@ -114,17 +91,9 @@ function TranscriptView({ content }) {
   );
 }
 
-function CostBreakdown({ model, usage, vatRate }) {
+function CostBreakdown({ model, usage, vatRate, pricingDb }) {
   if (!usage || !model) return null;
-  const PRICING = [
-    { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-    { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-    { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
-    { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-    { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-    { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
-  ];
-  const p = PRICING.find(t => model.startsWith(t.prefix));
+  const p = lookupPrice(pricingDb, model);
   if (!p) return null;
 
   const M = 1_000_000;
@@ -133,7 +102,7 @@ function CostBreakdown({ model, usage, vatRate }) {
     { label: 'Cache write', tokens: usage.cache_creation_tokens ?? 0, rate: p.cacheWrite },
     { label: 'Cache reads', tokens: usage.cache_read_tokens ?? usage.cached_input_tokens ?? 0, rate: p.cacheRead },
     { label: 'Output',      tokens: usage.output_tokens ?? 0, rate: p.output     },
-  ].filter(r => r.tokens > 0);
+  ].filter(r => r.tokens > 0 && r.rate != null);
 
   const subtotal = rows.reduce((s, r) => s + r.tokens / M * r.rate, 0);
   const vat = subtotal * (vatRate / 100);
@@ -229,7 +198,7 @@ function LabelEditor({ sessionId, value, onChange }) {
   );
 }
 
-export default function SessionDetail({ session, vatRate = 0, onLabelChange }) {
+export default function SessionDetail({ session, vatRate = 0, pricingDb = null, onLabelChange }) {
   const [activeTab, setActiveTab] = useState('transcript');
   const [transcript, setTranscript] = useState(null);
   const [diff, setDiff] = useState(null);
@@ -283,10 +252,8 @@ export default function SessionDetail({ session, vatRate = 0, onLabelChange }) {
   const gitBranch = session.git?.branch || git?.branch;
   const gitAvailable = git?.available !== false;
   const { total: displayTotal, cacheCreation, cacheReads } = resolveUsageTokens(usage);
-  const costUsd = usage?.cost_usd;
-  const baseCost = costUsd ?? estimateCost(session.model, usage);
+  const { value: baseCost, estimated: isEstimated } = sessionCost(session, pricingDb);
   const displayCost = baseCost != null ? baseCost * (1 + vatRate / 100) : null;
-  const isEstimated = costUsd == null;
 
   return (
     <div className="detail-panel">
@@ -383,7 +350,7 @@ export default function SessionDetail({ session, vatRate = 0, onLabelChange }) {
         </div>
       )}
 
-      <CostBreakdown model={session.model} usage={usage} vatRate={vatRate} />
+      <CostBreakdown model={session.model} usage={usage} vatRate={vatRate} pricingDb={pricingDb} />
 
       <div className="detail-tabs">
         <button

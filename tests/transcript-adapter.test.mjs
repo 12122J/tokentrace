@@ -56,6 +56,25 @@ test('extractFromTranscript returns null usage when no assistant messages have u
   assert.equal(result.usage, null);
 });
 
+test('extractFromTranscript uses Claude Code ai-title as session description', () => {
+  const lines = [
+    JSON.stringify({ type: 'user', message: { role: 'user', content: 'hey' } }),
+    JSON.stringify({ type: 'ai-title', aiTitle: 'Refactor dashboard pricing model' })
+  ];
+
+  const result = extractFromTranscript(lines);
+  assert.equal(result.description, 'Refactor dashboard pricing model');
+});
+
+test('extractFromTranscript falls back to first user message when ai-title is absent', () => {
+  const lines = [
+    JSON.stringify({ type: 'user', message: { role: 'user', content: 'please investigate missing token costs' } })
+  ];
+
+  const result = extractFromTranscript(lines);
+  assert.equal(result.description, 'please investigate missing token costs');
+});
+
 test('extractFromTranscript extracts Bash tool calls', () => {
   const lines = [
     JSON.stringify({

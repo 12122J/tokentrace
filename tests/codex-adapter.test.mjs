@@ -29,6 +29,25 @@ test('observeCodexLine extracts usage from turn.completed events', () => {
   ]);
 });
 
+test('observeCodexLine extracts thread metadata and assistant messages', () => {
+  assert.deepEqual(observeCodexLine(JSON.stringify({
+    type: 'thread.started',
+    thread_id: 'thread_123'
+  })), [
+    { type: 'session.thread', session_id: 'thread_123' }
+  ]);
+
+  assert.deepEqual(observeCodexLine(JSON.stringify({
+    type: 'item.completed',
+    item: {
+      type: 'agent_message',
+      text: 'tokentrace codex smoke test'
+    }
+  })), [
+    { type: 'message.agent', text: 'tokentrace codex smoke test' }
+  ]);
+});
+
 test('observeCodexLine extracts command tool completions when present', () => {
   const line = JSON.stringify({
     type: 'exec_command.completed',

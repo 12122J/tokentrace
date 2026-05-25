@@ -4,7 +4,8 @@ import { join, resolve } from 'node:path';
 import { extractFromTranscript } from './adapters/transcript.mjs';
 import { EventWriter } from './event-writer.mjs';
 import { countPatchFiles, getGitDiff, getGitSnapshot } from './git.mjs';
-import { estimateCostUsd } from './pricing.mjs';
+import { loadPricingDb } from './pricing-db.mjs';
+import { estimateCostUsdSync } from './pricing.mjs';
 import { regenerateReport } from './report.mjs';
 import { ensureDir, nowIso, writeJson } from './util.mjs';
 
@@ -16,7 +17,10 @@ function accountFingerprint() {
 }
 
 export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd }) {
-  const transcriptRaw = await readFile(transcriptPath, 'utf8');
+  const [transcriptRaw, pricingDb] = await Promise.all([
+    readFile(transcriptPath, 'utf8'),
+    loadPricingDb(),
+  ]);
   const lines = transcriptRaw.split(/\r?\n/);
   const extracted = extractFromTranscript(lines);
 
@@ -54,7 +58,7 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
     },
     usage: extracted.usage ? {
       ...extracted.usage,
-      cost_usd: estimateCostUsd(extracted.model, extracted.usage),
+      cost_usd: estimateCostUsdSync(extracted.model, extracted.usage, pricingDb),
     } : null,
     session: null,
     tools: extracted.tools,

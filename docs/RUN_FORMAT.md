@@ -26,6 +26,9 @@ TokenTrace writes one directory per run under `.tokentrace/runs`.
   "cwd": "/path/to/repo",
   "agent": "codex",
   "label": null,
+  "description": "Summarize repository structure",
+  "model": "gpt-4o",
+  "profile": "work",
   "started_at": "2026-05-24T12:00:00.000Z",
   "completed_at": "2026-05-24T12:00:10.000Z",
   "duration_ms": 10000,
@@ -49,10 +52,12 @@ TokenTrace writes one directory per run under `.tokentrace/runs`.
   },
   "usage": {
     "input_tokens": 1000,
-    "cached_input_tokens": 400,
+    "cache_creation_tokens": 400,
+    "cache_read_tokens": 12000,
     "output_tokens": 200,
     "reasoning_output_tokens": 50,
-    "total_tokens": 1200
+    "total_tokens": 1600,
+    "cost_usd": 0.0112
   },
   "tools": {
     "command_count": 1,
@@ -77,6 +82,11 @@ TokenTrace writes one directory per run under `.tokentrace/runs`.
 
 Fields may be `null` when an agent or environment does not expose the relevant
 data. For example, generic shell commands usually have `usage: null`.
+
+`total_tokens` intentionally excludes `cache_read_tokens`. Cache reads are
+repeated reads of the same cached context and can be much larger than the fresh
+work done in a session. TokenTrace stores them separately so cost estimates can
+still include them.
 
 ## `events.jsonl`
 

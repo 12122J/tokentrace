@@ -1,21 +1,13 @@
-// Prices per million tokens. Matched by prefix so minor version suffixes are handled.
-const TIERS = [
-  { prefix: 'claude-opus-4',    input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-  { prefix: 'claude-sonnet-4',  input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  { prefix: 'claude-haiku-4',   input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
-  { prefix: 'claude-opus-3',    input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
-  { prefix: 'claude-sonnet-3',  input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  { prefix: 'claude-haiku-3',   input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },
-];
+import { loadPricingDb, lookupPrice } from './pricing-db.mjs';
 
-function findPricing(model) {
-  if (!model) return null;
-  return TIERS.find(t => model.startsWith(t.prefix)) ?? null;
-}
-
-export function estimateCostUsd(model, usage) {
+/**
+ * Synchronous cost estimation using a pre-loaded pricing DB.
+ * Pass the result of loadPricingDb() as pricingDb.
+ * Falls back to null if model or usage is missing.
+ */
+export function estimateCostUsdSync(model, usage, pricingDb) {
   if (!usage) return null;
-  const p = findPricing(model);
+  const p = lookupPrice(pricingDb, model);
   if (!p) return null;
 
   const M = 1_000_000;
@@ -24,9 +16,19 @@ export function estimateCostUsd(model, usage) {
   const cacheRead = usage.cache_read_tokens ?? usage.cached_input_tokens ?? 0;
 
   return (
-    (usage.input_tokens  ?? 0) / M * p.input      +
-    cacheWrite           / M * p.cacheWrite         +
-    cacheRead            / M * p.cacheRead          +
-    (usage.output_tokens ?? 0) / M * p.output
+    (usage.input_tokens  ?? 0) / M * (p.input ?? 0)      +
+    cacheWrite           / M * (p.cacheWrite ?? 0)        +
+    cacheRead            / M * (p.cacheRead ?? 0)         +
+    (usage.output_tokens ?? 0) / M * (p.output ?? 0)
   );
+}
+
+/**
+ * Async cost estimation — loads the pricing DB on each call.
+ * Suitable for one-off use where the DB is not pre-loaded.
+ */
+export async function estimateCostUsd(model, usage) {
+  if (!usage) return null;
+  const db = await loadPricingDb();
+  return estimateCostUsdSync(model, usage, db);
 }

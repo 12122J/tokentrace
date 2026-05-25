@@ -10,7 +10,8 @@ export function extractFromTranscript(lines) {
   let ccVersion = null;
   let gitBranch = null;
   let entrypoint = null;
-  let description = null;
+  let aiTitle = null;
+  let firstUserMessage = null;
   const rawUsage = { input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 0 };
   let hasUsage = false;
   const tools = { command_count: 0, commands: [] };
@@ -26,6 +27,10 @@ export function extractFromTranscript(lines) {
     if (entry.gitBranch && !gitBranch && entry.gitBranch !== 'HEAD') gitBranch = entry.gitBranch;
     if (entry.entrypoint && !entrypoint) entrypoint = entry.entrypoint;
 
+    if (entry.type === 'ai-title' && entry.aiTitle && !aiTitle) {
+      aiTitle = entry.aiTitle;
+    }
+
     if (entry.type === 'user') {
       const content = entry.message?.content;
       const text = typeof content === 'string' ? content
@@ -33,9 +38,9 @@ export function extractFromTranscript(lines) {
       const trimmed = text.trim();
       if (trimmed) {
         humanParts.push(`[user]\n${trimmed}`);
-        // First substantive user message becomes the session description
-        if (!description && trimmed.length > 3) {
-          description = trimmed.slice(0, 160).replace(/\s+/g, ' ');
+        // First substantive user message is a fallback description
+        if (!firstUserMessage && trimmed.length > 3) {
+          firstUserMessage = trimmed.slice(0, 160).replace(/\s+/g, ' ');
         }
       }
     }
@@ -82,6 +87,8 @@ export function extractFromTranscript(lines) {
   // total_tokens excludes cache_read_tokens: those are repeated context reads,
   // not new work. Summing them across turns inflates the count by 10-100x.
   const total = rawUsage.input_tokens + rawUsage.cache_creation_input_tokens + rawUsage.output_tokens;
+
+  const description = aiTitle ?? firstUserMessage;
 
   return {
     cwd,

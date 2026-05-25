@@ -7,6 +7,7 @@ import packageJson from '../package.json' with { type: 'json' };
 import { recordFromHook } from './hook-recorder.mjs';
 import { recordRun } from './run-recorder.mjs';
 import { regenerateReport } from './report.mjs';
+import { loadPricingDb, updatePricingDb } from './pricing-db.mjs';
 import { readJson } from './util.mjs';
 
 const USAGE = `TokenTrace
@@ -19,6 +20,8 @@ Usage:
   tt serve                                     # open the web dashboard at http://localhost:7842
   tt hook stop
   tt install
+  tt pricing update                            # fetch latest pricing from litellm and save to cache
+  tt pricing show                              # print the current cached pricing table
   tt --version
   tt --help
 
@@ -27,6 +30,7 @@ Examples:
   tt summarize                                 # see all your recorded sessions
   tt serve                                     # browse sessions in the local web dashboard
   tt run -- claude --output-format json -p "explain this repo"
+  tt pricing update                            # refresh pricing from litellm
 `;
 
 export async function main(argv, options = {}) {
@@ -65,6 +69,10 @@ export async function main(argv, options = {}) {
 
   if (command === 'serve') {
     return serveCommand(rest);
+  }
+
+  if (command === 'pricing') {
+    return pricingCommand(rest);
   }
 
   throw new Error(`Unknown command: ${command}\n\n${USAGE}`);
@@ -236,6 +244,58 @@ async function serveCommand(_args) {
   });
 
   return 0;
+}
+
+async function pricingCommand(args) {
+  const sub = args[0];
+
+  if (sub === 'update') {
+    console.log('Fetching latest pricing from litellm...');
+    const db = await updatePricingDb();
+    const modelCount = Object.keys(db).length;
+    console.log(`Updated pricing for ${modelCount} models → ~/.tokentrace/pricing.json`);
+    return 0;
+  }
+
+  if (!sub || sub === 'show') {
+    const db = await loadPricingDb();
+    const entries = Object.entries(db);
+    if (entries.length === 0) {
+      console.log('No pricing data available.');
+      return 0;
+    }
+
+    const colWidths = { model: 40, input: 10, output: 10, cacheWrite: 12, cacheRead: 10 };
+    const pad = (str, w) => String(str ?? '—').padEnd(w);
+    const header = [
+      pad('Model', colWidths.model),
+      pad('Input/M', colWidths.input),
+      pad('Output/M', colWidths.output),
+      pad('CacheWrite/M', colWidths.cacheWrite),
+      pad('CacheRead/M', colWidths.cacheRead),
+    ].join('  ');
+    const divider = '-'.repeat(header.length);
+
+    console.log(header);
+    console.log(divider);
+
+    const fmtPrice = (v) => v == null ? '—' : `$${v.toFixed(3)}`;
+
+    for (const [modelId, p] of entries.sort(([a], [b]) => a.localeCompare(b))) {
+      const row = [
+        pad(modelId, colWidths.model),
+        pad(fmtPrice(p.input), colWidths.input),
+        pad(fmtPrice(p.output), colWidths.output),
+        pad(fmtPrice(p.cacheWrite), colWidths.cacheWrite),
+        pad(fmtPrice(p.cacheRead), colWidths.cacheRead),
+      ].join('  ');
+      console.log(row);
+    }
+
+    return 0;
+  }
+
+  throw new Error(`Unknown pricing subcommand: ${sub}. Available: update, show`);
 }
 
 function parseRunArgs(args) {

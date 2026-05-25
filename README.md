@@ -99,9 +99,11 @@ Agent sessions disappear into terminal scrollback. You either trust the result o
 - **Debugging** — when an agent does something unexpected, the log tells you exactly what happened
 - **PR evidence** — attach `summary.md` or `diff.patch` to pull requests so reviewers see what the agent actually did
 
-## MCP server — ask Claude about your sessions
+## MCP server — query your sessions from inside Claude Code
 
-Add to `~/.claude/mcp.json`:
+tokentrace ships an MCP server that gives Claude Code direct access to your local session data. Once configured, you can ask questions about your sessions in plain English — mid-conversation, no dashboard needed.
+
+**Setup:** add this to `~/.claude/mcp.json` (create the file if it doesn't exist):
 
 ```json
 {
@@ -114,11 +116,13 @@ Add to `~/.claude/mcp.json`:
 }
 ```
 
-Then ask Claude directly:
+Restart Claude Code, then ask inside any session:
 
 > *"how much have I spent on tokens this week?"*
-> *"what did I change in my last Claude Code session?"*
+> *"what did I change in my last session?"*
 > *"show me the diff from yesterday"*
+
+Claude will query your `~/.tokentrace/runs/` folder directly — nothing leaves your machine. Works in Claude Code CLI, Desktop app, and VS Code extension.
 
 ## Honest limitations
 

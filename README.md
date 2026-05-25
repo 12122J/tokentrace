@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-dark.svg">
-    <img src="docs/assets/wordmark-light.svg" alt="tokentrace" height="48">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-dark.png">
+    <img src="docs/assets/wordmark-light.png" alt="tokentrace" height="42">
   </picture>
 </h1>
 

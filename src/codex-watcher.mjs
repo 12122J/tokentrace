@@ -99,7 +99,6 @@ async function recordCodexDesktopSession(session) {
     usage,
     session: { session_id: runId },
     tools: { command_count: 0, commands: [] },
-    files: { read_count: 0, reads: [] },
     diff: { files_changed: countPatchFiles(patch) },
     artifacts: {
       events: 'events.jsonl',

@@ -58,7 +58,7 @@ function extractUserMessage(body) {
   return m ? unescapeRust(m[1]).trim() : null;
 }
 
-// Extract per-turn billed usage from response.completed WebSocket event
+// Extract per-turn billed usage and model from response.completed WebSocket event
 function extractResponseUsage(body) {
   if (!body?.includes('"type":"response.completed"')) return null;
   try {
@@ -71,6 +71,7 @@ function extractResponseUsage(body) {
       input_tokens: u.input_tokens ?? 0,
       output_tokens: u.output_tokens ?? 0,
       cached_tokens: u.input_tokens_details?.cached_tokens ?? 0,
+      model: data?.response?.model ?? null,
     };
   } catch {
     return null;
@@ -167,6 +168,7 @@ export async function readNewSessions(sinceId = 0, dbPath = DEFAULT_DB_PATH) {
         t.billed_input  += u.input_tokens;
         t.billed_output += u.output_tokens;
         t.billed_cached += u.cached_tokens;
+        if (!t.model && u.model) t.model = u.model;
       }
     }
 

@@ -22,21 +22,11 @@ function formatTokens(value) {
   return String(value);
 }
 
-function formatDuration(ms) {
-  if (ms == null || isNaN(ms)) return '—';
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  const m = Math.floor(ms / 60_000);
-  const s = Math.round((ms % 60_000) / 1000);
-  return `${m}m ${s}s`;
-}
-
 const COLUMNS = [
   { key: 'started_at', label: 'Date', sortFn: (a, b) => (a.started_at || a.completed_at || '').localeCompare(b.started_at || b.completed_at || '') },
   { key: 'model', label: 'Model', sortFn: (a, b) => (a.model || '').localeCompare(b.model || '') },
   { key: 'total_tokens', label: 'Tokens', sortFn: (a, b) => (effectiveTokens(a.usage) ?? -1) - (effectiveTokens(b.usage) ?? -1) },
   { key: 'files_changed', label: 'Files', sortFn: (a, b) => (a.diff?.files_changed ?? -1) - (b.diff?.files_changed ?? -1) },
-  { key: 'duration_ms', label: 'Duration', sortFn: (a, b) => (a.duration_ms ?? -1) - (b.duration_ms ?? -1) },
   { key: 'success', label: 'Status', sortFn: (a, b) => Number(b.success) - Number(a.success) },
 ];
 
@@ -127,7 +117,6 @@ export default function SessionsTable({ sessions, selectedId, onSelect, vatRate 
               <td className="muted">{formatTokens(effectiveTokens(session.usage))}</td>
               <td className="muted">{(() => { const { value, estimated } = sessionCost(session, pricingDb); const v = value != null ? value * (1 + vatRate / 100) : null; return formatCost(v, estimated); })()}</td>
               <td className="muted">{session.diff?.files_changed ?? '—'}</td>
-              <td className="muted">{formatDuration(session.duration_ms)}</td>
               <td>
                 <span className={`status-badge ${session.success !== false && session.exit_code === 0 ? 'status-badge--ok' : 'status-badge--fail'}`}>
                   {session.success !== false && session.exit_code === 0 ? 'ok' : `exit ${session.exit_code ?? '?'}`}

@@ -15,7 +15,6 @@ export function extractFromTranscript(lines) {
   const rawUsage = { input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 0 };
   let hasUsage = false;
   const tools = { command_count: 0, commands: [] };
-  const files = { read_count: 0, reads: [] };
   const humanParts = [];
 
   for (const raw of lines) {
@@ -75,8 +74,6 @@ export function extractFromTranscript(lines) {
             humanParts.push(`[bash] ${command}`);
           } else if (name === 'Read' || name === 'Write' || name === 'Edit') {
             const path = block.input?.file_path ?? block.input?.path ?? '';
-            files.read_count++;
-            files.reads.push({ path, bytes: null });
             humanParts.push(`[${name.toLowerCase()}] ${path}`);
           }
         }
@@ -106,7 +103,6 @@ export function extractFromTranscript(lines) {
       total_tokens: total
     } : null,
     tools,
-    files,
     humanTranscript: humanParts.join('\n\n')
   };
 }

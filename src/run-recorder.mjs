@@ -37,7 +37,6 @@ export async function recordRun({
 
   const writer = new EventWriter(eventsPath);
   const startedAt = nowIso();
-  const startedMs = Date.now();
   const gitBefore = await getGitSnapshot(resolvedCwd);
   const observations = createObservationState();
 
@@ -79,7 +78,6 @@ export async function recordRun({
     model,
     started_at: startedAt,
     completed_at: completedAt,
-    duration_ms: Date.now() - startedMs,
     exit_code: exitCode,
     success: exitCode === 0,
     git: {
@@ -89,7 +87,6 @@ export async function recordRun({
     usage,
     session: observations.session ?? null,
     tools: observations.tools,
-    files: observations.files,
     diff: {
       files_changed: countPatchFiles(patch)
     },
@@ -106,7 +103,6 @@ export async function recordRun({
   await writer.write('run.completed', {
     exit_code: exitCode,
     success: exitCode === 0,
-    duration_ms: run.duration_ms
   });
   await writer.close();
 
@@ -219,10 +215,6 @@ function createObservationState() {
       command_count: 0,
       commands: []
     },
-    files: {
-      read_count: 0,
-      reads: []
-    }
   };
 }
 
@@ -272,13 +264,6 @@ function applyObservation(state, observation) {
     });
   }
 
-  if (observation.type === 'file.read') {
-    state.files.read_count += 1;
-    state.files.reads.push({
-      path: observation.path,
-      bytes: observation.bytes
-    });
-  }
 }
 
 async function inferRunModel(command, agent) {

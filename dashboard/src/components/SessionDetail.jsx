@@ -11,15 +11,6 @@ function formatDate(isoString) {
   });
 }
 
-function formatDuration(ms) {
-  if (ms == null || isNaN(ms)) return '—';
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  const m = Math.floor(ms / 60_000);
-  const s = Math.round((ms % 60_000) / 1000);
-  return `${m}m ${s}s`;
-}
-
 function formatCost(value, estimated = false) {
   if (value == null || isNaN(value)) return '—';
   if (value === 0) return '—';
@@ -282,10 +273,6 @@ export default function SessionDetail({ session, vatRate = 0, pricingDb = null, 
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">{session.started_at ? 'Started' : 'Completed'}</div>
           <div className="detail-meta-item__value">{formatDate(session.started_at || session.completed_at)}</div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Duration</div>
-          <div className="detail-meta-item__value">{formatDuration(session.duration_ms)}</div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Model</div>

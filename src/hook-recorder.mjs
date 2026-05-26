@@ -48,7 +48,6 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
     entrypoint: extracted.entrypoint,
     started_at: null,
     completed_at: completedAt,
-    duration_ms: null,
     exit_code: 0,
     success: true,
     source: 'hook',
@@ -62,7 +61,6 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
     } : null,
     session: null,
     tools: extracted.tools,
-    files: extracted.files,
     diff: { files_changed: countPatchFiles(patch) },
     artifacts: {
       events: 'events.jsonl',
@@ -80,9 +78,6 @@ export async function recordFromHook({ sessionId, transcriptPath, fallbackCwd })
   }
   for (const cmd of extracted.tools.commands) {
     await writer.write('tool.command', cmd);
-  }
-  for (const file of extracted.files.reads) {
-    await writer.write('file.read', file);
   }
   await writer.write('run.completed', { source: 'hook' });
   await writer.close();

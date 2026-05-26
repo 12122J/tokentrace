@@ -438,15 +438,37 @@ async function serveCommand(_args) {
 }
 
 async function stopCommand() {
+  const PORT = 7842;
+
+  // Try PID file first
+  let stoppedViaPid = false;
   try {
     const pid = parseInt(await readFile(PID_FILE, 'utf8'), 10);
-    if (!pid) throw new Error('no pid');
-    process.kill(pid, 'SIGTERM');
-    await writeFile(PID_FILE, '');
-    console.log(`tokentrace dashboard stopped (pid ${pid}).`);
-  } catch {
-    console.log('No running tokentrace dashboard found.');
-  }
+    if (pid) {
+      process.kill(pid, 'SIGTERM');
+      await writeFile(PID_FILE, '');
+      console.log(`tokentrace dashboard stopped (pid ${pid}).`);
+      stoppedViaPid = true;
+    }
+  } catch { /* pid file missing or process already gone */ }
+
+  if (stoppedViaPid) return 0;
+
+  // Fallback: find whatever is on the port via lsof (macOS/Linux)
+  try {
+    const { execSync } = await import('node:child_process');
+    const raw = execSync(`lsof -ti :${PORT}`, { encoding: 'utf8' }).trim();
+    if (raw) {
+      for (const pid of raw.split('\n').map(Number).filter(Boolean)) {
+        try { process.kill(pid, 'SIGTERM'); } catch { /* already gone */ }
+      }
+      await writeFile(PID_FILE, '').catch(() => {});
+      console.log(`tokentrace dashboard stopped (port ${PORT}).`);
+      return 0;
+    }
+  } catch { /* lsof not available or nothing on port */ }
+
+  console.log('No running tokentrace dashboard found.');
   return 0;
 }
 

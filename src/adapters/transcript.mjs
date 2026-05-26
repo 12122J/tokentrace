@@ -49,7 +49,7 @@ export function extractFromTranscript(lines) {
       const msg = entry.message ?? {};
       const u = msg.usage ?? {};
 
-      if (msg.model && !model) model = msg.model;
+      if (msg.model && !model && !msg.model.startsWith('<')) model = msg.model;
 
       if (u.input_tokens != null || u.output_tokens != null) {
         hasUsage = true;

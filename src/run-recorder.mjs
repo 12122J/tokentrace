@@ -293,13 +293,23 @@ function inferModelFromArgs(command) {
 }
 
 async function readCodexConfiguredModel() {
+  // CODEX_MODEL env var takes priority
+  if (process.env.CODEX_MODEL) return process.env.CODEX_MODEL;
+  // Try config.toml
   try {
-    const config = await readFile(join(homedir(), '.codex', 'config.toml'), 'utf8');
-    const match = config.match(/^model\s*=\s*"([^"]+)"/m);
-    return match?.[1] ?? null;
-  } catch {
-    return null;
+    const toml = await readFile(join(homedir(), '.codex', 'config.toml'), 'utf8');
+    const m = toml.match(/^model\s*=\s*"([^"]+)"/m);
+    if (m) return m[1];
+  } catch { /* no file */ }
+  // Try config.yaml / config.yml
+  for (const name of ['config.yaml', 'config.yml']) {
+    try {
+      const yaml = await readFile(join(homedir(), '.codex', name), 'utf8');
+      const m = yaml.match(/^model\s*:\s*["']?([^\s"']+)/m);
+      if (m) return m[1];
+    } catch { /* no file */ }
   }
+  return null;
 }
 
 function withoutType(observation) {

@@ -139,7 +139,7 @@ h1, h2, h3, h4 {
 
 .metrics-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -210,6 +210,21 @@ h1, h2, h3, h4 {
 }
 
 /* ── Chart section ── */
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.chart-row .chart-section {
+  border-bottom: none;
+  border-right: 1px solid #e5e7eb;
+}
+
+.chart-row .chart-section:last-child {
+  border-right: none;
+}
 
 .chart-section {
   padding: 24px 24px 16px;

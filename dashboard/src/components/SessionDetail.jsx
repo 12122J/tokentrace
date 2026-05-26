@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { lookupPrice, sessionCost } from '../pricing.js';
+import TurnChart from './TurnChart.jsx';
 
 function formatDate(isoString) {
   if (!isoString) return '—';
@@ -9,15 +10,6 @@ function formatDate(isoString) {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     hour12: false,
   });
-}
-
-function formatDuration(ms) {
-  if (ms == null || isNaN(ms)) return '—';
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  const m = Math.floor(ms / 60_000);
-  const s = Math.round((ms % 60_000) / 1000);
-  return `${m}m ${s}s`;
 }
 
 function formatCost(value, estimated = false) {
@@ -59,6 +51,15 @@ function buildWarnings(session) {
   }
   if (session.git?.after?.dirty) {
     warnings.push('Working tree was dirty after session completed');
+  }
+  const u = session.usage;
+  if (u) {
+    const cacheWrite = u.cache_creation_tokens ?? 0;
+    const output = u.output_tokens ?? 0;
+    if (cacheWrite > 0 && output > 0 && cacheWrite > output * 8) {
+      const ratio = (cacheWrite / output).toFixed(0);
+      warnings.push(`Context bloat: ${ratio}× more cache writes than output — large context loaded with little output`);
+    }
   }
   return warnings;
 }
@@ -202,6 +203,7 @@ function LabelEditor({ sessionId, value, onChange }) {
 }
 
 export default function SessionDetail({ session, vatRate = 0, pricingDb = null, onLabelChange }) {
+  const hasTurns = Array.isArray(session?.turns) && session.turns.length > 1;
   const [activeTab, setActiveTab] = useState('transcript');
   const [transcript, setTranscript] = useState(null);
   const [diff, setDiff] = useState(null);
@@ -282,10 +284,6 @@ export default function SessionDetail({ session, vatRate = 0, pricingDb = null, 
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">{session.started_at ? 'Started' : 'Completed'}</div>
           <div className="detail-meta-item__value">{formatDate(session.started_at || session.completed_at)}</div>
-        </div>
-        <div className="detail-meta-item">
-          <div className="detail-meta-item__label">Duration</div>
-          <div className="detail-meta-item__value">{formatDuration(session.duration_ms)}</div>
         </div>
         <div className="detail-meta-item">
           <div className="detail-meta-item__label">Model</div>
@@ -379,6 +377,14 @@ export default function SessionDetail({ session, vatRate = 0, pricingDb = null, 
         >
           Diff
         </button>
+        {hasTurns && (
+          <button
+            className={`detail-tab ${activeTab === 'turns' ? 'detail-tab--active' : ''}`}
+            onClick={() => setActiveTab('turns')}
+          >
+            Turns
+          </button>
+        )}
       </div>
 
       {activeTab === 'transcript' && (
@@ -391,6 +397,10 @@ export default function SessionDetail({ session, vatRate = 0, pricingDb = null, 
         loadingDiff
           ? <div className="loading">Loading...</div>
           : <DiffView content={diff} />
+      )}
+
+      {activeTab === 'turns' && (
+        <TurnChart turns={session.turns} />
       )}
     </div>
   );

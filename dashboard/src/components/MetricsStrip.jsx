@@ -17,6 +17,19 @@ function formatTokens(value) {
   return String(value);
 }
 
+function cacheHitRate(sessions) {
+  let totalCacheRead = 0;
+  let totalFresh = 0;
+  for (const s of sessions) {
+    const u = s.usage;
+    if (!u) continue;
+    totalCacheRead += u.cache_read_tokens ?? u.cache_read_input_tokens ?? u.cached_input_tokens ?? 0;
+    totalFresh += u.input_tokens ?? 0;
+  }
+  const total = totalCacheRead + totalFresh;
+  return total > 0 ? (totalCacheRead / total) * 100 : null;
+}
+
 export default function MetricsStrip({ sessions, vatRate = 0, pricingDb = null }) {
   const costResults = sessions.map(s => sessionCost(s, pricingDb));
   const costs = costResults.map(c => c.value).filter(c => c != null);
@@ -26,6 +39,7 @@ export default function MetricsStrip({ sessions, vatRate = 0, pricingDb = null }
   const sessionCount = sessions.length;
   const avgCost = costs.length > 0 ? totalCost / costs.length : null;
   const isEstimated = costResults.some(c => c.value != null && c.estimated);
+  const hitRate = cacheHitRate(sessions);
 
   return (
     <div className="metrics-strip">
@@ -50,6 +64,13 @@ export default function MetricsStrip({ sessions, vatRate = 0, pricingDb = null }
           {avgCost != null ? formatCost(avgCost, isEstimated) : '—'}
         </div>
         <div className="metric-card__sub">per run</div>
+      </div>
+      <div className="metric-card">
+        <div className="metric-card__label">Cache Hit Rate</div>
+        <div className="metric-card__value">
+          {hitRate != null ? `${hitRate.toFixed(0)}%` : '—'}
+        </div>
+        <div className="metric-card__sub">input tokens served from cache</div>
       </div>
     </div>
   );

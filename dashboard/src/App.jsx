@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import MetricsStrip from './components/MetricsStrip.jsx';
 import CostChart from './components/CostChart.jsx';
+import CacheEfficiencyChart from './components/CacheEfficiencyChart.jsx';
+import TopCostChart from './components/TopCostChart.jsx';
 import SessionsTable from './components/SessionsTable.jsx';
 import SessionDetail from './components/SessionDetail.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
@@ -100,7 +102,17 @@ export default function App() {
             <MetricsStrip sessions={sessions} vatRate={vatRate} pricingDb={pricingDb} />
             <div className="body-columns">
               <div className="col-left">
-                <CostChart sessions={sessions} vatRate={vatRate} pricingDb={pricingDb} />
+                <div className="chart-row">
+                  <CostChart sessions={sessions} vatRate={vatRate} pricingDb={pricingDb} />
+                  <CacheEfficiencyChart sessions={sessions} />
+                </div>
+                <TopCostChart
+                  sessions={sessions}
+                  vatRate={vatRate}
+                  pricingDb={pricingDb}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                />
                 <div className="section-header">Sessions</div>
                 <SessionsTable
                   sessions={sessions}

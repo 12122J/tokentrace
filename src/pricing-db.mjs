@@ -10,6 +10,7 @@ const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 // Bundled fallback pricing (USD per million tokens).
 // Used when offline and no cache file exists.
 const FALLBACK_PRICING = {
+  'claude-fable-5':  { input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
   'claude-opus-4':   { input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
   'claude-sonnet-4': { input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
   'claude-haiku-4':  { input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },

@@ -3,6 +3,7 @@
 // All prices are USD per million tokens.
 
 const FALLBACK = [
+  { prefix: 'claude-fable-5',  input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
   { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
   { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
   { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },

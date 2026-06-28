@@ -4,9 +4,12 @@
 
 const FALLBACK = [
   { prefix: 'claude-fable-5',  input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
-  { prefix: 'claude-opus-4',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-mythos-5', input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
+  { prefix: 'claude-opus-4-1', input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-opus-4-0', input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  { prefix: 'claude-opus-4',   input:  5.00, output: 25.00, cacheWrite:  6.25, cacheRead: 0.50 },
   { prefix: 'claude-sonnet-4', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  { prefix: 'claude-haiku-4',  input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+  { prefix: 'claude-haiku-4',  input:  1.00, output:  5.00, cacheWrite:  1.25, cacheRead: 0.10 },
   { prefix: 'claude-opus-3',   input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
   { prefix: 'claude-sonnet-3', input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
   { prefix: 'claude-haiku-3',  input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },

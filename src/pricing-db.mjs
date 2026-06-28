@@ -11,9 +11,13 @@ const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 // Used when offline and no cache file exists.
 const FALLBACK_PRICING = {
   'claude-fable-5':  { input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
-  'claude-opus-4':   { input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  'claude-mythos-5': { input: 10.00, output: 50.00, cacheWrite: 12.50, cacheRead: 1.00 },
+  // Original Opus 4.0/4.1 were $15/$75; Opus 4.5+ dropped to $5/$25 (most-specific keys first).
+  'claude-opus-4-1': { input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  'claude-opus-4-0': { input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
+  'claude-opus-4':   { input:  5.00, output: 25.00, cacheWrite:  6.25, cacheRead: 0.50 },
   'claude-sonnet-4': { input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
-  'claude-haiku-4':  { input:  0.80, output:  4.00, cacheWrite:  1.00, cacheRead: 0.08 },
+  'claude-haiku-4':  { input:  1.00, output:  5.00, cacheWrite:  1.25, cacheRead: 0.10 },
   'claude-opus-3':   { input: 15.00, output: 75.00, cacheWrite: 18.75, cacheRead: 1.50 },
   'claude-sonnet-3': { input:  3.00, output: 15.00, cacheWrite:  3.75, cacheRead: 0.30 },
   'claude-haiku-3':  { input:  0.25, output:  1.25, cacheWrite:  0.30, cacheRead: 0.03 },

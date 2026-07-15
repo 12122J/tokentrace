@@ -70,12 +70,12 @@ export default function App() {
           <span className="header__wordmark">tokentrace</span>
           <a
             className="header__gh"
-            href="https://github.com/12122J/tokentrace"
+            href="https://github.com/fjgbue/tokentrace"
             target="_blank"
             rel="noreferrer"
             title="View on GitHub"
           >
-            12122J/tokentrace
+            fjgbue/tokentrace
           </a>
         </div>
         <div className="header__controls">

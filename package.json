@@ -39,12 +39,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/12122J/tokentrace.git"
+    "url": "git+https://github.com/fjgbue/tokentrace.git"
   },
   "bugs": {
-    "url": "https://github.com/12122J/tokentrace/issues"
+    "url": "https://github.com/fjgbue/tokentrace/issues"
   },
-  "homepage": "https://github.com/12122J/tokentrace#readme",
+  "homepage": "https://github.com/fjgbue/tokentrace#readme",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

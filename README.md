@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@j___avi/tokentrace"><img src="https://img.shields.io/npm/v/@j___avi/tokentrace?color=000&labelColor=000&style=flat-square" alt="npm"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-000?labelColor=000&style=flat-square" alt="MIT"></a>
-  <a href="https://github.com/12122J/tokentrace"><img src="https://img.shields.io/badge/by-12122J-000?labelColor=000&style=flat-square" alt="author"></a>
+  <a href="https://github.com/fjgbue/tokentrace"><img src="https://img.shields.io/badge/by-fjgbue-000?labelColor=000&style=flat-square" alt="author"></a>
 </p>
 
 <br>
@@ -137,7 +137,7 @@ tokentrace reads what's available from each surface. Some data isn't logged by t
 ## Development
 
 ```bash
-git clone https://github.com/12122J/tokentrace
+git clone https://github.com/fjgbue/tokentrace
 cd tokentrace
 npm install
 npm test         # 48 tests
@@ -153,4 +153,4 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Keep new feat
 
 ## License
 
-MIT — [12122J](https://github.com/12122J)
+MIT — [fjgbue](https://github.com/fjgbue)
